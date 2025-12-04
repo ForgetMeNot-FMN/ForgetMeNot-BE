@@ -1,0 +1,16 @@
+version: 2.1
+setup: true
+orbs:
+  path-filtering: circleci/path-filtering@0.0.2
+
+workflows:
+  forgetmenot-monorepo-setup:
+    jobs:
+      - path-filtering/filter:
+          filters:
+            branches:
+              only: main
+          base-revision: main
+          mapping: |
+            services/login/.* run-login-service-workflow true
+          config-path: .circleci/monorepo-pipeline-prod.yml
