@@ -1,0 +1,71 @@
+version: 2.1
+
+parameters:
+  project-id:
+    type: string
+    default: "forgetmenot-prod"
+  auth-file-path:
+    type: string
+    default: "./config/prod/forgetmenot-prod-key.json"
+  service-account:
+    type: string
+    default: "forgetmenot-prod@forgetmenot-477816.iam.gserviceaccount.com"
+  api-entry-point:
+    type: string
+    default: "app"
+  run-login-service-workflow:
+    type: boolean
+    default: false
+
+jobs:
+
+  forgetmenot-login-service-prod-deploy:
+    docker:
+      - image: google/cloud-sdk:latest
+    environment:
+      PROJECT_ID: << pipeline.parameters.project-id >>
+      AUTH_FILE_PATH: << pipeline.parameters.auth-file-path >>
+      SERVICE_ACCOUNT: << pipeline.parameters.service-account >>
+      API_ENTRY_POINT: << pipeline.parameters.api-entry-point >>
+    steps:
+      - checkout
+      - run:
+          name: Login Service Prod Deploy
+          command: |
+            gcloud auth activate-service-account --key-file=$AUTH_FILE_PATH
+            gcloud config set project $PROJECT_ID
+
+            apt-get update
+            apt-get install bash npm -y
+
+            cd services/login
+            bash _update.sh "prod"
+            npm ci
+            cd ../../
+
+            gcloud functions deploy forgetmenot-login-service-prod \
+              --cpu=1 \
+              --memory=512Mi \
+              --source ./services/login \
+              --service-account=$SERVICE_ACCOUNT \
+              --gen2 \
+              --env-vars-file=./config/prod/login-service-env.yaml \
+              --runtime=nodejs22 \
+              --region=europe-west1 \
+              --entry-point=$API_ENTRY_POINT \
+              --allow-unauthenticated \
+              --trigger-http \
+              --min-instances=1 \
+              --max-instances=20 \
+              --ingress-settings internal-and-gclb              
+
+workflows:
+  run-login-service-workflow:
+    when:
+      or:
+        - << pipeline.parameters.run-login-service-workflow >>
+    jobs: 
+      - forgetmenot-login-service-prod-deploy:
+          filters:
+            branches:
+              only: main  
