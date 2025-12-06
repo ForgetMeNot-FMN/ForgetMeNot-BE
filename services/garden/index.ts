@@ -1,0 +1,16 @@
+import express from "express";
+import gardenRouter from "./src/routes/router";
+import cors from "cors";
+const app = express();
+app.use(cors());
+
+app.use(express.json())
+
+
+app.use("/gardens", gardenRouter);
+
+const PORT = process.env.PORT || 8080;
+
+app.listen(PORT, () => {
+  console.log(`Garden service running on port ${PORT}`);
+});
