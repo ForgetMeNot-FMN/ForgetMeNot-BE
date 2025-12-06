@@ -3,7 +3,7 @@ version: 2.1
 parameters:
   project-id:
     type: string
-    default: "forgetmenot-prod"
+    default: "forgetmenot-477816"
   auth-file-path:
     type: string
     default: "./config/prod/forgetmenot-prod-key.json"
@@ -53,7 +53,7 @@ jobs:
               --source ./services/login \
               --service-account=$SERVICE_ACCOUNT \
               --gen2 \
-              --env-vars-file=./config/prod/login-service-env.yaml \
+              --set-env-vars ENV=prod
               --runtime=nodejs22 \
               --region=europe-west1 \
               --entry-point=$API_ENTRY_POINT \
