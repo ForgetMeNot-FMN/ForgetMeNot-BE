@@ -44,7 +44,6 @@ jobs:
             apt-get install bash npm -y
 
             cd services/login
-            bash _update.sh "prod"
             npm ci
             cd ../../
 
