@@ -1,12 +1,14 @@
 FROM node:19-alpine3.16
-RUN npm install node-gyp -g
-RUN node-gyp install
+
+RUN npm install -g node-gyp
 RUN npm install -g babel-cli
-RUN mkdir -p /usr/src/app
-WORKDIR /usr/src/app/
+
+WORKDIR /usr/src/app
+
+COPY package*.json ./
+RUN npm ci
 
 COPY . .
-WORKDIR /usr/src/app/services/service-template
 
-RUN npm ci
+EXPOSE 8080
 CMD ["npm", "run", "dev"]

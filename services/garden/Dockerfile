@@ -1,14 +1,14 @@
 FROM node:19-alpine3.16
 
-RUN apk add --no-cache python3 make g++
+RUN npm install -g node-gyp
+RUN npm install -g babel-cli
 
 WORKDIR /usr/src/app
 
-COPY services/garden/package*.json ./
+COPY package*.json ./
 RUN npm ci
 
-COPY services/garden .
+COPY . .
 
-RUN npm run build
-
-CMD ["node", "dist/index.js"]
+EXPOSE 8080
+CMD ["npm", "run", "dev"]
