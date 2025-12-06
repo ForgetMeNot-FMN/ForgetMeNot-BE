@@ -16,9 +16,14 @@ parameters:
   run-login-service-workflow:
     type: boolean
     default: false
+  run-garden-service-workflow:
+    type: boolean
+    default: false
+  run-user-service-workflow:
+    type: boolean
+    default: false
 
 jobs:
-
   forgetmenot-login-service-prod-deploy:
     docker:
       - image: google/cloud-sdk:latest
@@ -57,7 +62,69 @@ jobs:
               --trigger-http \
               --min-instances=1 \
               --max-instances=20 \
-              --ingress-settings internal-and-gclb              
+              --ingress-settings internal-and-gclb     
+
+  forgetmenot-user-service-prod-deploy:
+    docker:
+      - image: gcr.io/google.com/cloudsdktool/google-cloud-cli:530.0.0-slim
+    environment:
+      PROJECT_ID: << pipeline.parameters.project-id >>
+      AUTH_FILE_PATH: << pipeline.parameters.auth-file-path >>
+      SERVICE_ACCOUNT: << pipeline.parameters.service-account >>
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: false
+      - run:
+          name: Build & Deploy User Service (Cloud Run)
+          command: |
+            gcloud auth activate-service-account --key-file=$AUTH_FILE_PATH
+            gcloud config set project $PROJECT_ID
+
+            gcloud builds submit ./services/user \
+              --tag gcr.io/$PROJECT_ID/forgetmenot-user-prod
+
+            gcloud run deploy forgetmenot-user-prod \
+              --image gcr.io/$PROJECT_ID/forgetmenot-user-prod \
+              --platform managed \
+              --region europe-west1 \
+              --allow-unauthenticated \
+              --service-account $SERVICE_ACCOUNT \
+              --memory 512Mi \
+              --cpu 1 \
+              --port 8080 \
+              --set-env-vars ENV=prod
+
+  forgetmenot-garden-service-prod-deploy:
+    docker:
+      - image: gcr.io/google.com/cloudsdktool/google-cloud-cli:530.0.0-slim
+    environment:
+      PROJECT_ID: << pipeline.parameters.project-id >>
+      AUTH_FILE_PATH: << pipeline.parameters.auth-file-path >>
+      SERVICE_ACCOUNT: << pipeline.parameters.service-account >>
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: false
+      - run:
+          name: Build & Deploy Garden Service (Cloud Run)
+          command: |
+            gcloud auth activate-service-account --key-file=$AUTH_FILE_PATH
+            gcloud config set project $PROJECT_ID
+
+            gcloud builds submit ./services/garden \
+              --tag gcr.io/$PROJECT_ID/forgetmenot-garden-prod
+
+            gcloud run deploy forgetmenot-garden-prod \
+              --image gcr.io/$PROJECT_ID/forgetmenot-garden-prod \
+              --platform managed \
+              --region europe-west1 \
+              --allow-unauthenticated \
+              --service-account $SERVICE_ACCOUNT \
+              --memory 512Mi \
+              --cpu 1 \
+              --port 8080 \
+              --set-env-vars ENV=prod
 
 workflows:
   run-login-service-workflow:
@@ -66,6 +133,26 @@ workflows:
         - << pipeline.parameters.run-login-service-workflow >>
     jobs: 
       - forgetmenot-login-service-prod-deploy:
+          filters:
+            branches:
+              only: main  
+
+  run-garden-service-workflow:
+    when:
+      or:
+        - << pipeline.parameters.run-garden-service-workflow >> 
+    jobs: 
+      - forgetmenot-garden-service-prod-deploy:
+          filters:
+            branches:
+              only: main  
+              
+  run-user-service-workflow:
+    when:
+      or:
+        - << pipeline.parameters.run-user-service-workflow >>
+    jobs: 
+      - forgetmenot-user-service-prod-deploy:
           filters:
             branches:
               only: main  

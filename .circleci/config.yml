@@ -13,4 +13,6 @@ workflows:
           base-revision: main
           mapping: |
             services/login/.* run-login-service-workflow true
+            services/garden/.* run-garden-service-workflow true
+            services/user/.* run-user-service-workflow true
           config-path: .circleci/monorepo-pipeline-prod.yml
