@@ -1,11 +1,16 @@
 import bcrypt from "bcryptjs";
 import axios from "axios";
+import admin from "firebase-admin";
 import { firestore } from "../services/firebaseAdmin";
-import { AuthResponse, AuthUser, LocalLoginRequest, LocalRegisterRequest } from "../models/authDtos";
+import {
+  AuthResponse,
+  AuthUser,
+  LocalLoginRequest,
+  LocalRegisterRequest,
+} from "../models/authDtos";
 import { tokenService } from "./tokenService";
 
 const USERS_COLLECTION = "users";
-const USER_SERVICE_URL = process.env.USER_SERVICE_URL!;
 const GARDEN_SERVICE_URL = process.env.GARDEN_SERVICE_URL!;
 
 export const localAuthService = {
@@ -22,10 +27,19 @@ export const localAuthService = {
       throw new Error("Email already registered");
     }
 
+    let firebaseUser;
+    try {
+      firebaseUser = await admin.auth().createUser({
+        email,
+        password,
+      });
+    } catch (err: any) {
+      throw new Error(`Firebase Auth create error: ${err.message}`);
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const userRef = firestore.collection(USERS_COLLECTION).doc();
-    const userId = userRef.id;
+    const userId = firebaseUser.uid;
 
     const newUser = {
       userId,
@@ -44,7 +58,7 @@ export const localAuthService = {
       created_at: new Date(),
     };
 
-    await userRef.set(newUser);
+    await firestore.collection(USERS_COLLECTION).doc(userId).set(newUser);
 
     await axios.post(`${GARDEN_SERVICE_URL}/gardens/${userId}`);
 
@@ -97,12 +111,3 @@ export const localAuthService = {
     };
   },
 };
-
-//WE CAN ADD:
-// await admin.auth().createUser({
-//   email: payload.email,
-//   password: payload.password,
-// });
-// This will create a user in Firebase Authentication as well for better integration with Firebase services.
-// However, we need to handle synchronization between Firestore and Firebase Auth for updates and deletions.
-// And it can also cause auth limit issues if we have too many users.
