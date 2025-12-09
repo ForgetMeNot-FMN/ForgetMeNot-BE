@@ -44,6 +44,7 @@ jobs:
             apt-get install bash npm -y
 
             cd services/login
+            bash _update.sh "prod"
             npm ci
             cd ../../
 
@@ -53,7 +54,7 @@ jobs:
               --source ./services/login \
               --service-account=$SERVICE_ACCOUNT \
               --gen2 \
-              --set-env-vars ENV=prod
+              --env-vars-file=./config/prod/login-service-env.yaml \
               --runtime=nodejs22 \
               --region=europe-west1 \
               --entry-point=$API_ENTRY_POINT \

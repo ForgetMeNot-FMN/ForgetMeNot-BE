@@ -5,11 +5,8 @@ fi
 
 if [ "$arg1" = "local" ]; then
   echo "LOCAL"
-  cp -r ../../config/local/service-template-env-local.yaml .env
-  elif [ "$arg1" = "dev" ]; then
-  echo "DEV"
-  cp -r ../../config/dev/service-template-env-dev.yaml .env
+  cp -r ../../config/local/login-service-env.yaml .env
   elif [ "$arg1" = "prod" ]; then
   echo "PROD"
-  cp -r ../../config/prod/service-template-env-prod.yaml .env
+  cp -r ../../config/prod/login-service-env.yaml .env
 fi
