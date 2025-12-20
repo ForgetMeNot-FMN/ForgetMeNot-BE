@@ -10,9 +10,6 @@ parameters:
   api-entry-point:
     type: string
     default: "app"
-  run-login-service-workflow:
-    type: boolean
-    default: false
   run-garden-service-workflow:
     type: boolean
     default: false
@@ -138,16 +135,6 @@ jobs:
               --ingress-settings internal-and-gclb
 
 workflows:
-  run-login-service-workflow:
-    when:
-      or:
-        - << pipeline.parameters.run-login-service-workflow >>
-    jobs: 
-      - forgetmenot-login-service-prod-deploy:
-          filters:
-            branches:
-              only: main  
-
   run-garden-service-workflow:
     when:
       or:

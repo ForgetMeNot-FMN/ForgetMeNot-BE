@@ -12,7 +12,6 @@ workflows:
               only: main
           base-revision: main
           mapping: |
-            services/login/.* run-login-service-workflow true
             services/garden/.* run-garden-service-workflow true
             services/user/.* run-user-service-workflow true
             services/habit/.* run-habit-service-workflow true
