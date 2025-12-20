@@ -54,12 +54,13 @@ class HabitService {
     return habit;
   }
 
-  async deleteHabit(userId: string, habitData: Partial<Habit>) {
+  async deleteHabit(userId: string, habitId: string) {
     logger.warn("Delete habit request", { userId });
 
-    await habitRepository.delete(userId, habitData.id);
+    const deletedHabit = await habitRepository.delete(userId, habitId);
 
     logger.info("Habit deleted", { userId });
+    return deletedHabit;
   }
 }
 
