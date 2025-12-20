@@ -128,6 +128,7 @@ jobs:
               --allow-unauthenticated \
               --min-instances=1 \
               --max-instances=20 \
+              --quiet \
               --ingress internal-and-cloud-load-balancing
 
 workflows:
