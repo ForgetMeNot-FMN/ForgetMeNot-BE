@@ -5,8 +5,8 @@ fi
 
 if [ "$arg1" = "local" ]; then
   echo "LOCAL"
-  cp -r ../../config/local/login-service-env.yaml .env
+  cp -r ../../config/local/habit-service-env.yaml .env
   elif [ "$arg1" = "prod" ]; then
   echo "PROD"
-  cp -r ../../config/prod/login-service-env.yaml .env
+  cp -r ../../config/prod/habit-service-env.yaml .env
 fi
