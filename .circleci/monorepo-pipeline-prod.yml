@@ -128,7 +128,7 @@ jobs:
               --allow-unauthenticated \
               --min-instances=1 \
               --max-instances=20 \
-              --ingress internal-and-gclb
+              --ingress internal-and-cloud-load-balancing
 
 workflows:
   run-garden-service-workflow:
