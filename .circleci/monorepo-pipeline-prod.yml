@@ -4,9 +4,6 @@ parameters:
   project-id:
     type: string
     default: "forgetmenot-477816"
-  auth-file-path:
-    type: string
-    default: "./config/prod/forgetmenot-prod-key.json"
   service-account:
     type: string
     default: "forgetmenot-prod@forgetmenot-477816.iam.gserviceaccount.com"
@@ -24,52 +21,11 @@ parameters:
     default: false
 
 jobs:
-  forgetmenot-login-service-prod-deploy:
-    docker:
-      - image: google/cloud-sdk:latest
-    environment:
-      PROJECT_ID: << pipeline.parameters.project-id >>
-      AUTH_FILE_PATH: << pipeline.parameters.auth-file-path >>
-      SERVICE_ACCOUNT: << pipeline.parameters.service-account >>
-      API_ENTRY_POINT: << pipeline.parameters.api-entry-point >>
-    steps:
-      - checkout
-      - run:
-          name: Login Service Prod Deploy
-          command: |
-            gcloud auth activate-service-account --key-file=$AUTH_FILE_PATH
-            gcloud config set project $PROJECT_ID
-
-            apt-get update
-            apt-get install bash npm -y
-
-            cd services/login
-            bash _update.sh "prod"
-            npm ci
-            cd ../../
-
-            gcloud functions deploy forgetmenot-login-service-prod \
-              --cpu=1 \
-              --memory=512Mi \
-              --source ./services/login \
-              --service-account=$SERVICE_ACCOUNT \
-              --gen2 \
-              --env-vars-file=./config/prod/login-service-env.yaml \
-              --runtime=nodejs22 \
-              --region=europe-west1 \
-              --entry-point=$API_ENTRY_POINT \
-              --allow-unauthenticated \
-              --trigger-http \
-              --min-instances=1 \
-              --max-instances=20 \
-              --ingress-settings internal-and-gclb     
-
   forgetmenot-user-service-prod-deploy:
     docker:
       - image: gcr.io/google.com/cloudsdktool/google-cloud-cli:530.0.0-slim
     environment:
       PROJECT_ID: << pipeline.parameters.project-id >>
-      AUTH_FILE_PATH: << pipeline.parameters.auth-file-path >>
       SERVICE_ACCOUNT: << pipeline.parameters.service-account >>
     steps:
       - checkout
@@ -78,7 +34,8 @@ jobs:
       - run:
           name: Build & Deploy User Service (Cloud Run)
           command: |
-            gcloud auth activate-service-account --key-file=$AUTH_FILE_PATH
+            echo "$GCP_SA_KEY" > /tmp/gcp-key.json
+            gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
             gcloud config set project $PROJECT_ID
 
             apt-get update
@@ -119,7 +76,8 @@ jobs:
       - run:
           name: Build & Deploy Garden Service (Cloud Run)
           command: |
-            gcloud auth activate-service-account --key-file=$AUTH_FILE_PATH
+            echo "$GCP_SA_KEY" > /tmp/gcp-key.json
+            gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
             gcloud config set project $PROJECT_ID
 
             gcloud builds submit ./services/garden \
