@@ -81,19 +81,29 @@ jobs:
             gcloud auth activate-service-account --key-file=$AUTH_FILE_PATH
             gcloud config set project $PROJECT_ID
 
-            gcloud builds submit ./services/user \
-              --tag gcr.io/$PROJECT_ID/forgetmenot-user-prod
+            apt-get update
+            apt-get install bash npm -y
 
-            gcloud run deploy forgetmenot-user-prod \
-              --image gcr.io/$PROJECT_ID/forgetmenot-user-prod \
-              --platform managed \
-              --region europe-west1 \
+            cd services/user
+            bash _update.sh "prod"
+            npm ci
+            cd ../../
+
+            gcloud functions deploy forgetmenot-user-service-prod \
+              --cpu=1 \
+              --memory=512Mi \
+              --source ./services/user \
+              --service-account=$SERVICE_ACCOUNT \
+              --gen2 \
+              --env-vars-file=./config/prod/user-service-env.yaml \
+              --runtime=nodejs22 \
+              --region=europe-west1 \
+              --entry-point=$API_ENTRY_POINT \
               --allow-unauthenticated \
-              --service-account $SERVICE_ACCOUNT \
-              --memory 512Mi \
-              --cpu 1 \
-              --port 8080 \
-              --set-env-vars ENV=prod
+              --trigger-http \
+              --min-instances=1 \
+              --max-instances=20 \
+              --ingress-settings internal-and-gclb
 
   forgetmenot-garden-service-prod-deploy:
     docker:
