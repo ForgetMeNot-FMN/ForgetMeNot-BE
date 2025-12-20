@@ -9,6 +9,9 @@
     "dev": "nodemon --watch ./index.ts",
     "start": "node dist/index.js"
   },
+  "engines": {
+    "node": "22"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
