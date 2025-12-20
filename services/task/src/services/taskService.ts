@@ -30,28 +30,45 @@ class TaskService {
 
 
   async createTask(userId: string, body: any) {
-    logger.info("Create task request", { userId });
+  logger.info("Create task request", { userId });
 
-    if (!body?.title) {
-      logger.warn("Task title missing", { userId });
-      throw new Error("Task title is required");
-    }
-
-    const task = await taskRepository.create(userId, {
-      title: body.title,
-      description: body.description || "",
-      duration_minutes: body.duration_minutes,
-      start_time: body.start_time,
-      is_active: true,
-    });
-
-    logger.info("Task created successfully", {
-      userId,
-      taskId: task.task_id,
-    });
-
-    return task;
+  if (!body?.title) {
+    logger.warn("Task title missing", { userId });
+    throw new Error("Task title is required");
   }
+
+  // duration_minutes integer olarak kalması için
+  const dm = body.duration_minutes;
+
+  if (dm !== undefined && dm !== null) {
+    if (
+      typeof dm !== "number" ||
+      !Number.isInteger(dm) ||
+      dm <= 0
+    ) {
+      logger.warn("Invalid duration_minutes", { userId, dm });
+      throw new Error(
+        "duration_minutes must be a positive integer in minutes or null"
+      );
+    }
+  }
+
+  const task = await taskRepository.create(userId, {
+    title: body.title,
+    description: body.description || "",
+    duration_minutes: dm ?? null, // null ise null olarak gitmesi için
+    start_time: body.start_time,
+    is_active: true,
+  });
+
+  logger.info("Task created successfully", {
+    userId,
+    taskId: task.task_id,
+  });
+
+  return task;
+}
+
 
 
   async deleteTask(taskId: string) {

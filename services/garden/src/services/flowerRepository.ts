@@ -9,32 +9,44 @@ export const flowerRepository = {
       .collection("flowers");
   },
 
+  // Get single flower
   async getById(userId: string, flowerId: string): Promise<Flower | null> {
-    const snap = await this.collection(userId).doc(flowerId).get();
-    return snap.exists ? ({ id: snap.id, ...snap.data() } as Flower) : null;
+    const ref = this.collection(userId).doc(flowerId);
+    const snap = await ref.get();
+
+    if (!snap.exists) return null;
+
+    return {
+      ...(snap.data() as Flower),
+      flower_id: snap.id,
+    };
   },
 
+  // Get all flowers of user
   async getAll(userId: string): Promise<Flower[]> {
     const snap = await this.collection(userId).get();
-    return snap.docs.map(
-      (d) => ({ id: d.id, ...d.data() } as Flower)
-    );
+
+    return snap.docs.map((doc) => ({
+      ...(doc.data() as Flower),
+      flower_id: doc.id, 
+    }));
   },
 
-  async create(
-    userId: string,
-    data: Omit<Flower, "id" | "created_at">
-  ) {
-    const ref = this.collection(userId).doc();
+  // Create new flower
+  async create(userId: string, data: Omit<Flower, "flower_id" | "created_at">) {
+    const doc = this.collection(userId).doc(); // auto id
 
-    await ref.set({
+    const payload: Flower = {
       ...data,
+      flower_id: doc.id, // doc id = flower_id
       created_at: new Date(),
-    });
+    };
 
-    return { id: ref.id, ...data };
+    await doc.set(payload);
+    return payload;
   },
 
+  // Update flower
   async update(
     userId: string,
     flowerId: string,
@@ -45,6 +57,7 @@ export const flowerRepository = {
       .set(data, { merge: true });
   },
 
+  // Delete flower
   async delete(userId: string, flowerId: string) {
     await this.collection(userId).doc(flowerId).delete();
   },
