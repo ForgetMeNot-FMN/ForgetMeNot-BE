@@ -39,6 +39,9 @@ export interface HabitCompletion {
   habitId: string;
   date: string; // YYYY-MM-DD
   completed: boolean;
+  rewardGranted: boolean;
+  coins: number;
+  water: number;
   createdAt: Date;
   value?: number; // count veya duration için
 }

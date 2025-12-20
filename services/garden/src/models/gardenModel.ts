@@ -5,5 +5,6 @@ export interface Garden {
   streak: number;
   total_flowers: number;
   total_watered_count: number;
+  lastWateredDate: string;
   updated_at: Date;
 }
