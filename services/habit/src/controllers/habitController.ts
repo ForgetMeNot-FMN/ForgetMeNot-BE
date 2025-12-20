@@ -15,9 +15,9 @@ export async function createHabitHandler(req: Request, res: Response) {
 export async function getHabitHandler(req: Request, res: Response) {
   try {
     const { userId } = req.params;
-    const { habit } = req.body;
+    const { habitId } = req.params;
 
-    const result = await habitService.getHabit(userId, habit.id);
+    const result = await habitService.getHabit(userId, habitId);
     return res.json({ success: true, data: result });
   } catch (err: any) {
     return res.status(404).json({ success: false, message: err.message });
@@ -38,9 +38,13 @@ export async function getActiveHabitsHandler(req: Request, res: Response) {
 export async function deleteHabitHandler(req: Request, res: Response) {
   try {
     const { userId } = req.params;
-    const { habit } = req.body;
-    await habitService.deleteHabit(userId, habit.id);
-    return res.json({ success: true });
+    const { habitId } = req.params;
+    const result = await habitService.deleteHabit(userId, habitId);
+    return res.json({
+      success: true,
+      message: "Habit deleted successfully",
+      deletedHabit: result,
+    });
   } catch (err: any) {
     return res.status(400).json({ success: false, message: err.message });
   }

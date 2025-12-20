@@ -1,5 +1,6 @@
 import { firestore } from "./firebaseAdmin";
 import { Habit } from "../models/habitModel";
+import { logger } from "../utils/logger";
 
 const HABITS_COLLECTION = "habits";
 
@@ -46,13 +47,18 @@ export const habitRepository = {
   async delete(userId: string, id: string) {
     const snap = await firestore
       .collection(HABITS_COLLECTION)
-      .where("userId", "==", userId)
       .where("id", "==", id)
       .get();
 
     if (snap.empty) {
       throw new Error("Habit not found");
     }
+    if (snap.docs[0].data().userId !== userId) {
+      throw new Error("Forbidden");
+    }
+    const habit = snap.docs[0].data() as Habit;
+    logger.info("Deleting habit", { userId, habitId: id, deletedHabit: habit });
     await firestore.collection(HABITS_COLLECTION).doc(snap.docs[0].id).delete();
+    return habit;
   },
 };
