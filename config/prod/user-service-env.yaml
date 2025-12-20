@@ -1,0 +1,4 @@
+PROJECT_ID: forgetmenot-477816
+ENVIRONMENT: production
+LOG_LEVEL: info
+PORT: 8080

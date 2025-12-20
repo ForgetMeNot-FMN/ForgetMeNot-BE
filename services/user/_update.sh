@@ -11,5 +11,5 @@ if [ "$arg1" = "local" ]; then
   cp -r ../../config/dev/service-template-env-dev.yaml .env
   elif [ "$arg1" = "prod" ]; then
   echo "PROD"
-  cp -r ../../config/prod/service-template-env-prod.yaml .env
+  cp -r ../../config/prod/user-service-env.yaml .env
 fi
