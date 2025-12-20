@@ -1,12 +1,16 @@
 {
   "name": "habit",
-  "version": "1.0.1",
+  "version": "1.0.6",
   "description": "",
   "main": "dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "dev": "nodemon --watch ./index.ts"
+    "dev": "nodemon --watch ./index.ts",
+    "start": "node dist/index.js"
+  },
+  "engines": {
+    "node": "22"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +24,7 @@
   },
   "dependencies": {
     "cors": "^2.8.5",
+    "dayjs": "^1.11.19",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "express-rate-limit": "^8.2.1",

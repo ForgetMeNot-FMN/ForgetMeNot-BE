@@ -1,14 +1,14 @@
-FROM node:19-alpine3.16
-
-RUN apk add --no-cache python3 make g++
+FROM node:22-slim
 
 WORKDIR /usr/src/app
 
-COPY services/habit/package*.json ./
+COPY package*.json ./
 RUN npm ci
 
-COPY services/habit .
+COPY . .
 
 RUN npm run build
+
+EXPOSE 8080
 
 CMD ["node", "dist/index.js"]

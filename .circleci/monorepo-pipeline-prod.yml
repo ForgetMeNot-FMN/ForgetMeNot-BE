@@ -118,21 +118,18 @@ jobs:
             npm ci
             cd ../../
 
-            gcloud functions deploy forgetmenot-habit-service-prod \
+            gcloud run deploy forgetmenot-habit-service-prod \
               --cpu=1 \
               --memory=512Mi \
               --source ./services/habit \
               --service-account=$SERVICE_ACCOUNT \
-              --gen2 \
               --set-secrets=/temp/.env=projects/305796297986/secrets/forgetmenot-habit-prod-env:latest \
-              --runtime=nodejs22 \
               --region=europe-west1 \
-              --entry-point=$API_ENTRY_POINT \
               --allow-unauthenticated \
-              --trigger-http \
               --min-instances=1 \
               --max-instances=20 \
-              --ingress-settings internal-and-gclb
+              --quiet \
+              --ingress internal-and-cloud-load-balancing
 
 workflows:
   run-garden-service-workflow:

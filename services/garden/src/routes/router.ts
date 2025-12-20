@@ -2,21 +2,21 @@ import { Router } from "express";
 import {
   createGardenHandler,
   getGardenHandler,
+  waterGardenHandler,
   addWaterHandler,
   addCoinsHandler,
-  increaseStreakHandler,
   deleteGardenHandler,
 } from "../controllers/gardenController";
 
 const router = Router();
 
 router.post("/:userId", createGardenHandler);
-router.get("/:userId", getGardenHandler);              
+router.get("/:userId", getGardenHandler);
 
-router.post("/:userId/water", addWaterHandler);        
-router.post("/:userId/coins", addCoinsHandler);        
-router.post("/:userId/streak", increaseStreakHandler);
+router.post("/:userId/water", waterGardenHandler);
+router.post("/:userId/add-water", addWaterHandler);
+router.post("/:userId/add-coins", addCoinsHandler);
 
-router.delete("/:userId", deleteGardenHandler);        
+router.delete("/:userId", deleteGardenHandler);
 
 export default router;

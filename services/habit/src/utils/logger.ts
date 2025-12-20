@@ -1,6 +1,6 @@
 export type LogLevel = "info" | "error" | "warn" | "debug";
 
-const SERVICE_NAME = "user-service";
+const SERVICE_NAME = "habit-service";
 
 function log(level: LogLevel, message: string, meta?: any) {
   const payload: any = {

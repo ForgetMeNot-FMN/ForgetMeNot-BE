@@ -17,6 +17,7 @@ export const gardenRepository = {
       streak: 0,
       total_flowers: 0,
       total_watered_count: 0,
+      lastWateredDate: "",
       updated_at: new Date(),
     };
 
