@@ -52,3 +52,36 @@ export interface LocationTrigger {
   longitude: number;
   event: GeoEvent;
 }
+
+export interface habitDTO {
+  id?: string;
+  title: string;
+  description?: string;
+  startDate: Date;
+  schedule?: HabitSchedule;
+  type: "count" | "duration" | "boolean";
+  targetValue?: number;
+  locationTrigger?: LocationTrigger;
+  status: "active" | "paused" | "archived";
+}
+
+// Example Task model for future reference
+// export interface Task {
+//   id: string;
+//   userId: string;
+
+//   title: string;
+//   description?: string;
+
+//   dueDate?: Date; // deadline
+//   remindAt?: Date; // hatırlatma bildirimi zamanı
+
+//   locationTrigger?: LocationTrigger;
+
+//   status: "pending" | "completed" | "cancelled";
+
+//   completedAt?: Date;
+
+//   createdAt: Date;
+//   updatedAt: Date;
+// }
