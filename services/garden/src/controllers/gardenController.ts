@@ -45,13 +45,13 @@ export async function addCoinsHandler(req: Request, res: Response) {
   }
 }
 
-export async function increaseStreakHandler(req: Request, res: Response) {
+export async function waterGardenHandler(req, res) {
   try {
     const { userId } = req.params;
-    const garden = await gardenService.increaseStreak(userId);
-    return res.json({ success: true, data: garden });
-  } catch (err: any) {
-    return res.status(400).json({ success: false, message: err.message });
+    const result = await gardenService.waterGarden(userId);
+    res.json(result);
+  } catch (e) {
+    res.status(400).json({ message: e.message });
   }
 }
 

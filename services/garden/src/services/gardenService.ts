@@ -1,86 +1,81 @@
 import { gardenRepository } from "./gardenRepository";
 import { logger } from "../utils/logger";
+import dayjs from "dayjs";
 
 class GardenService {
+
   async createGarden(userId: string) {
-    logger.info("Create garden request", { userId });
-
     const existing = await gardenRepository.getByUserId(userId);
-    if (existing) {
-      logger.warn("Garden already exists", { userId });
-      throw new Error("Garden already exists");
-    }
+    if (existing) throw new Error("Garden already exists");
 
-    const created = await gardenRepository.createDefault(userId);
-
-    logger.info("Garden created successfully", { userId });
-
-    return created;
+    return gardenRepository.createDefault(userId);
   }
 
   async getGarden(userId: string) {
-    logger.debug("Get garden request", { userId });
-
     const garden = await gardenRepository.getByUserId(userId);
-    if (!garden) {
-      logger.warn("Garden not found", { userId });
-      throw new Error("Garden not found");
-    }
+    if (!garden) throw new Error("Garden not found");
 
-    logger.debug("Garden fetched", { userId });
+    const yesterday = dayjs().subtract(1, "day").format("YYYY-MM-DD");
+
+    // 🔁 LAZY RESET
+    if (garden.lastWateredDate && garden.lastWateredDate < yesterday) {
+      await gardenRepository.update(userId, { streak: 0 });
+      garden.streak = 0;
+    }
 
     return garden;
   }
 
-  async addWater(userId: string, amount: number) {
-    logger.info("Add water request", { userId, amount });
-
+  async waterGarden(userId: string) {
     const garden = await this.getGarden(userId);
+    if (garden.water <= 0) throw new Error("No water left");
+
+    const today = dayjs().format("YYYY-MM-DD");
+    const yesterday = dayjs().subtract(1, "day").format("YYYY-MM-DD");
+
+    let newStreak = garden.streak;
+
+    if (garden.lastWateredDate === today) {
+      // aynı gün → streak değişmez
+    } else if (garden.lastWateredDate === yesterday) {
+      newStreak += 1;
+    } else {
+      newStreak = 1;
+    }
 
     await gardenRepository.update(userId, {
-      water: garden.water + amount,
-      total_watered_count: garden.total_watered_count + amount,
+      water: garden.water - 1,
+      streak: newStreak,
+      lastWateredDate: today,
+      total_watered_count: garden.total_watered_count + 1,
     });
 
-    logger.info("Water added", { userId, newWater: garden.water + amount });
+    logger.info("Garden watered", { userId, newStreak });
 
+    return {
+      streak: newStreak,
+      waterLeft: garden.water - 1,
+    };
+  }
+
+  async addWater(userId: string, amount: number) {
+    const garden = await this.getGarden(userId);
+    await gardenRepository.update(userId, {
+      water: garden.water + amount,
+    });
     return this.getGarden(userId);
   }
 
   async addCoins(userId: string, amount: number) {
-    logger.info("Add coins request", { userId, amount });
-
     const garden = await this.getGarden(userId);
-
     await gardenRepository.update(userId, {
       coins: garden.coins + amount,
     });
-
-    logger.info("Coins added", { userId, newCoins: garden.coins + amount });
-
-    return this.getGarden(userId);
-  }
-
-  async increaseStreak(userId: string) {
-    logger.info("Increase streak request", { userId });
-
-    const garden = await this.getGarden(userId);
-
-    await gardenRepository.update(userId, {
-      streak: garden.streak + 1,
-    });
-
-    logger.info("Streak increased", { userId, newStreak: garden.streak + 1 });
-
     return this.getGarden(userId);
   }
 
   async deleteGarden(userId: string) {
-    logger.warn("Delete garden request", { userId });
-
     await gardenRepository.delete(userId);
-
-    logger.info("Garden deleted", { userId });
   }
 }
 
