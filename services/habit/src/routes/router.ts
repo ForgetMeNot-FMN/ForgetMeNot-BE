@@ -8,9 +8,9 @@ import {
 
 const router = Router();
 
-router.post("/:userId", createHabitHandler);
-router.get("/:userId", getActiveHabitsHandler);
-router.get("/:userId/habitId", getHabitHandler);
-router.delete("/:userId/habitId", deleteHabitHandler);
+router.post("/create/:userId", createHabitHandler);
+router.get("/get/:userId", getActiveHabitsHandler);
+router.get("/get/:userId/habitId", getHabitHandler);
+router.delete("/delete/:userId/habitId", deleteHabitHandler);
 
 export default router;

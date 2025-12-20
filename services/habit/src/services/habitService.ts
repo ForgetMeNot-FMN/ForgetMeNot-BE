@@ -1,22 +1,29 @@
 import { habitRepository } from "./habitRepository";
 import { logger } from "../utils/logger";
-import { Habit } from "../models/habitModel";
+import { Habit, habitDTO } from "../models/habitModel";
+import { v4 as uuidv4 } from "uuid";
 
 class HabitService {
-  async createHabit(userId: string, habitData: Partial<Habit>) {
-    logger.info("Create habit request", { userId });
-
-    const existing = await habitRepository.findById(habitData.id, userId);
-    if (existing) {
-      logger.warn("Habit already exists", { userId });
-      throw new Error("Habit already exists");
-    }
-
-    const created = await habitRepository.create(habitData as Habit);
-
-    logger.info("Habit created successfully", { userId });
-
-    return created;
+  async createHabit(userId: string, habitData: habitDTO): Promise<Habit> {
+    console.log("Creating habit for user:", userId, "with data:", habitData);
+    const habit: Habit = removeUndefined({
+      id: uuidv4(),
+      userId,
+      title: habitData.title,
+      description: habitData.description,
+      startDate: habitData.startDate,
+      schedule: habitData.schedule,
+      type: habitData.type,
+      targetValue: habitData.targetValue,
+      status: "active",
+      currentStreak: 0,
+      longestStreak: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    console.log("Habit object to be created:", habit);
+    await habitRepository.create(habit);
+    return habit;
   }
 
   async getActiveHabits(userId: string) {
@@ -54,6 +61,12 @@ class HabitService {
 
     logger.info("Habit deleted", { userId });
   }
+}
+
+function removeUndefined<T extends object>(obj: T): T {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([_, v]) => v !== undefined)
+  ) as T;
 }
 
 export const habitService = new HabitService();

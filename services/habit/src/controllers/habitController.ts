@@ -4,8 +4,8 @@ import { habitService } from "../services/habitService";
 export async function createHabitHandler(req: Request, res: Response) {
   try {
     const { userId } = req.params;
-    const { habit } = req.body;
-    const result = await habitService.createHabit(userId, habit);
+    const habitData = req.body;
+    const result = await habitService.createHabit(userId, habitData);
     return res.status(201).json({ success: true, data: result });
   } catch (err: any) {
     return res.status(400).json({ success: false, message: err.message });
