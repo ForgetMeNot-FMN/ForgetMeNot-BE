@@ -48,3 +48,64 @@ export async function deleteTaskHandler(req: Request, res: Response) {
     return res.status(400).json({ success: false, message: err.message });
   }
 }
+
+export async function completeTaskHandler(req: Request, res: Response) {
+  try {
+    const { taskId, userId } = req.params;
+
+    const result = await taskService.completeTask(taskId, userId);
+
+    return res.json({ success: true, data: result });
+  } catch (err: any) {
+    return res.status(400).json({ success: false, message: err.message });
+  }
+}
+
+
+ export async function getTodayCompletedTasksHandler(req: Request, res: Response) {
+  try {
+    const { userId } = req.params;
+    const tasks = await taskService.getTodayCompletedTasks(userId);
+
+    return res.json({ success: true, data: tasks });
+  } catch (err: any) {
+    return res.status(400).json({ success: false, message: err.message });
+  }
+}
+
+export async function getTodayUncompletedTasksHandler(req: Request, res: Response) {
+  try {
+    const { userId } = req.params;
+    const tasks = await taskService.getTodayUncompletedDueTasks(userId);
+
+    return res.json({ success: true, data: tasks });
+  } catch (err: any) {
+    return res.status(400).json({ success: false, message: err.message });
+  }
+}
+
+
+export async function getTodayStatsHandler(req: Request, res: Response) {
+  try {
+    const { userId } = req.params;
+    const stats = await taskService.getTodayStats(userId);
+
+    return res.json({ success: true, data: stats });
+  } catch (err: any) {
+    return res.status(400).json({ success: false, message: err.message });
+  }
+}
+
+
+export async function getOverallStatsHandler(req: Request, res: Response) {
+  try {
+    const { userId } = req.params;
+    const stats = await taskService.getOverallStats(userId);
+
+    return res.json({ success: true, data: stats });
+  } catch (err: any) {
+    return res.status(400).json({ success: false, message: err.message });
+  }
+}
+
+
