@@ -1,5 +1,6 @@
 import { firestore } from "./firebaseAdmin";
 import { Task } from "../models/taskModel";
+import dayjs from "dayjs";
 
 const TASKS_COLLECTION = "tasks";
 
@@ -62,4 +63,44 @@ export const taskRepository = {
       .doc(taskId)
       .delete();
   },
+
+  // Bugün bitecek olan tasklerin hepsi
+  async getTodayCompletedTasks(userId: string): Promise<Task[]> {
+  const start = dayjs().startOf("day").toDate();
+  const end = dayjs().endOf("day").toDate();
+
+  const snapshot = await firestore
+    .collection(TASKS_COLLECTION)
+    .where("user_id", "==", userId)
+    .where("is_completed", "==", true)
+    .where("completed_at", ">=", start)
+    .where("completed_at", "<=", end)
+    .get();
+
+  return snapshot.docs.map(doc => ({
+    ...(doc.data() as Task),
+    task_id: doc.id,
+  }));
+},
+
+// Bugün daha bitmemiş olan taskler
+async getTodayUncompletedDueTasks(userId: string): Promise<Task[]> {
+  const start = dayjs().startOf("day").toDate();
+  const end = dayjs().endOf("day").toDate();
+
+  const snapshot = await firestore
+    .collection(TASKS_COLLECTION)
+    .where("user_id", "==", userId)
+    .where("is_completed", "==", false)
+    .where("end_time", ">=", start)
+    .where("end_time", "<=", end)
+    .get();
+
+  return snapshot.docs.map(doc => ({
+    ...(doc.data() as Task),
+    task_id: doc.id,
+  }));
+},
+
+
 };

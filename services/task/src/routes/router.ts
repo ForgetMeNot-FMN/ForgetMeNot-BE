@@ -4,6 +4,11 @@ import {
   getTaskHandler,
   createTaskHandler,
   deleteTaskHandler,
+  completeTaskHandler,
+  getTodayCompletedTasksHandler,
+  getTodayUncompletedTasksHandler,
+  getTodayStatsHandler,
+  getOverallStatsHandler
 } from "../controllers/taskController";
 
 const router = Router();
@@ -19,5 +24,20 @@ router.post("/:userId", createTaskHandler);
 
 // Delete task
 router.delete("/:taskId", deleteTaskHandler);
+
+// Complete task
+router.post("/:userId/:taskId/complete", completeTaskHandler);
+
+// Get today's completed tasks
+router.get("/:userId/today/completed", getTodayCompletedTasksHandler);
+
+// Get today's uncompleted tasks
+router.get("/:userId/today/pending", getTodayUncompletedTasksHandler);
+
+// Get today's task stats
+router.get("/:userId/today/stats", getTodayStatsHandler);
+
+// Get all task stats
+router.get("/:userId/overall/stats", getOverallStatsHandler);
 
 export default router;
