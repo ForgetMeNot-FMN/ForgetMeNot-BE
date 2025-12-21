@@ -1,5 +1,5 @@
 import { flowerRepository } from "./flowerRepository";
-import { flowerLogger } from "../utils/flowerLogger";
+import { logger } from "../utils/flowerLogger";
 import { GrowthStage } from "../utils/enums";
 import dayjs from "dayjs";
 import { gardenRepository } from "./gardenRepository";
@@ -21,7 +21,7 @@ class FlowerService {
 
     });
 
-    flowerLogger.info("Flower created", { userId, flowerId: flower.flower_id });
+    logger.info("Flower created", { userId, flowerId: flower.flower_id });
 
     return flower;
   }
@@ -45,7 +45,7 @@ class FlowerService {
         is_alive: false,
       });
 
-      flowerLogger.warn("Flower died.", {
+      logger.warn("Flower died.", {
         userId,
         flowerId,
         days_without_water: diffDays,
@@ -102,7 +102,7 @@ class FlowerService {
     water: garden.water - 1,
   });
 
-  flowerLogger.info("Flower watered", {
+  logger.info("Flower watered", {
     userId,
     flowerId,
     newWaterCount,
@@ -152,7 +152,7 @@ class FlowerService {
         is_alive: false,
     });
 
-    flowerLogger.warn("Flower died after 1 month of inactivity", {
+    logger.warn("Flower died after 1 month of inactivity", {
         userId,
         flowerId,
         days_without_water: diffDays,
@@ -164,7 +164,7 @@ class FlowerService {
   //  Delete Flower
   async deleteFlower(userId: string, flowerId: string) {
     await flowerRepository.delete(userId, flowerId);
-    flowerLogger.warn("Flower deleted", { userId, flowerId });
+    logger.warn("Flower deleted", { userId, flowerId });
   }
 }
 

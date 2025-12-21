@@ -16,7 +16,7 @@ function log(level: LogLevel, message: string, meta?: any) {
   else console.log(JSON.stringify(payload));
 }
 
-export const flowerLogger = {
+export const logger = {
   info: (msg: string, meta?: any) => log("info", msg, meta),
   error: (msg: string, meta?: any) => log("error", msg, meta),
   warn: (msg: string, meta?: any) => log("warn", msg, meta),

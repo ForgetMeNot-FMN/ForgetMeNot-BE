@@ -1,5 +1,6 @@
 import { taskRepository } from "./taskRepository";
 import { logger } from "../utils/logger";
+import { taskDTO } from "../models/taskDTO";
 
 class TaskService {
   async getTasks(userId: string) {
@@ -28,8 +29,7 @@ class TaskService {
     }
 
 
-
-  async createTask(userId: string, body: any) {
+  async createTask(userId: string, body: taskDTO) {
   logger.info("Create task request", { userId });
 
   if (!body?.title) {

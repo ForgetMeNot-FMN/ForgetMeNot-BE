@@ -5,7 +5,9 @@ import { flowerService } from "../services/flowerService";
 export async function createFlower(req: Request, res: Response) {
   try {
     const { userId } = req.params;
-    const flower = await flowerService.createFlower(userId, req.body);
+    const flowerData = req.body;
+
+    const flower = await flowerService.createFlower(userId, flowerData);
 
     return res.status(201).json({ success: true, data: flower });
   } catch (err: any) {
