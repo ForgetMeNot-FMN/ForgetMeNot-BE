@@ -1,6 +1,6 @@
 export type LogLevel = "info" | "error" | "warn" | "debug";
 
-const SERVICE_NAME = "garden-service";
+const SERVICE_NAME = "flower-service";
 
 function log(level: LogLevel, message: string, meta?: any) {
   const payload: any = {
@@ -10,16 +10,10 @@ function log(level: LogLevel, message: string, meta?: any) {
     timestamp: new Date().toISOString(),
   };
 
-  if (meta) {
-    payload.meta = meta;
-  }
+  if (meta) payload.meta = meta;
 
-  // Cloud Run stdout/stderr'e giden her şey log olarak görünür
-  if (level === "error") {
-    console.error(JSON.stringify(payload));
-  } else {
-    console.log(JSON.stringify(payload));
-  }
+  if (level === "error") console.error(JSON.stringify(payload));
+  else console.log(JSON.stringify(payload));
 }
 
 export const logger = {

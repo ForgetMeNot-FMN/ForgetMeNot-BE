@@ -1,6 +1,6 @@
 export type LogLevel = "info" | "error" | "warn" | "debug";
 
-const SERVICE_NAME = "garden-service";
+const SERVICE_NAME = "task-service"; // Cloud Run'da logları daha kolay görmek için
 
 function log(level: LogLevel, message: string, meta?: any) {
   const payload: any = {
@@ -14,7 +14,6 @@ function log(level: LogLevel, message: string, meta?: any) {
     payload.meta = meta;
   }
 
-  // Cloud Run stdout/stderr'e giden her şey log olarak görünür
   if (level === "error") {
     console.error(JSON.stringify(payload));
   } else {
