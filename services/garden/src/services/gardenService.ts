@@ -47,7 +47,7 @@ class GardenService {
       water: garden.water - 1,
       streak: newStreak,
       lastWateredDate: today,
-      total_watered_count: garden.total_watered_count + 1,
+      totalWateredCount: garden.totalWateredCount + 1,
     });
 
     logger.info("Garden watered", { userId, newStreak });

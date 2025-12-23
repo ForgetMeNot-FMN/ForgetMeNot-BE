@@ -11,14 +11,14 @@ export const gardenRepository = {
 
   async createDefault(userId: string): Promise<Garden> {
     const garden: Garden = {
-      user_id: userId,
+      userId: userId,
       coins: 20,
       water: 10,
       streak: 0,
-      total_flowers: 0,
-      total_watered_count: 0,
+      totalFlowers: 0,
+      totalWateredCount: 0,
       lastWateredDate: "",
-      updated_at: new Date(),
+      updatedAt: new Date(),
     };
 
     await firestore.collection(GARDENS_COLLECTION).doc(userId).set(garden);
@@ -28,7 +28,7 @@ export const gardenRepository = {
   async update(userId: string, data: Partial<Garden>) {
     await firestore.collection(GARDENS_COLLECTION).doc(userId).update({
       ...data,
-      updated_at: new Date(),
+      updatedAt: new Date(),
     });
   },
 

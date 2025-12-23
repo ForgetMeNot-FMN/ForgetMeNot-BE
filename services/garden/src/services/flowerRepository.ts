@@ -18,7 +18,7 @@ export const flowerRepository = {
 
     return {
       ...(snap.data() as Flower),
-      flower_id: snap.id,
+      flowerId: snap.id,
     };
   },
 
@@ -28,18 +28,18 @@ export const flowerRepository = {
 
     return snap.docs.map((doc) => ({
       ...(doc.data() as Flower),
-      flower_id: doc.id, 
+      flowerId: doc.id, 
     }));
   },
 
   // Create new flower
-  async create(userId: string, data: Omit<Flower, "flower_id" | "created_at">) {
+  async create(userId: string, data: Omit<Flower, "flowerId" | "createdAt">) {
     const doc = this.collection(userId).doc(); // auto id
 
     const payload: Flower = {
       ...data,
-      flower_id: doc.id, // doc id = flower_id
-      created_at: new Date(),
+      flowerId: doc.id, // doc id = flowerId
+      createdAt: new Date(),
     };
 
     await doc.set(payload);

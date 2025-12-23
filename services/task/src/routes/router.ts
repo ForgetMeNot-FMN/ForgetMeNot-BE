@@ -8,22 +8,26 @@ import {
   getTodayCompletedTasksHandler,
   getTodayUncompletedTasksHandler,
   getTodayStatsHandler,
-  getOverallStatsHandler
+  getOverallStatsHandler,
+  updateTaskHandler
 } from "../controllers/taskController";
 
 const router = Router();
 
 // Get all tasks of a user
-router.get("/:userId", getTasksHandler);
+router.get("/user/:userId", getTasksHandler);
 
 // Get a single task
-router.get("/task/:taskId", getTaskHandler); // Task id olduğu için user id eklemeye gerek yok
+router.get("/:taskId", getTaskHandler); // Task id olduğu için user id eklemeye gerek yok
 
 // Create task
 router.post("/:userId", createTaskHandler);
 
 // Delete task
 router.delete("/:taskId", deleteTaskHandler);
+
+// Update task
+router.patch("/:taskId", updateTaskHandler);
 
 // Complete task
 router.post("/:userId/:taskId/complete", completeTaskHandler);

@@ -8,12 +8,12 @@ export const taskRepository = {
   async getTasksByUserId(userId: string): Promise<Task[]> {
     const snapshot = await firestore
       .collection(TASKS_COLLECTION)
-      .where("user_id", "==", userId)
+      .where("userId", "==", userId)
       .get();
 
     return snapshot.docs.map(doc => ({
       ...(doc.data() as Task),
-      task_id: doc.id, // Firestore doc id = task_id
+      taskId: doc.id, // Firestore doc.id = taskId
     }));
   },
 
@@ -29,19 +29,19 @@ export const taskRepository = {
 
   return {
     ...(doc.data() as Task),
-    task_id: doc.id,
+    taskId: doc.id,
   };
 },
 
 
 
-  async create(userId: string, data: Omit<Task, "task_id" | "user_id" |"created_at">): Promise<Task> {
+  async create(userId: string, data: Omit<Task, "taskId" | "userId" |"createdAt">): Promise<Task> {
     const ref = firestore.collection(TASKS_COLLECTION).doc();
 
     const task: Task = {
-      task_id: ref.id,
-      user_id: userId,
-      created_at: new Date(),
+      taskId: ref.id,
+      userId: userId,
+      createdAt: new Date(),
       ...data,
     };
 
@@ -54,7 +54,7 @@ export const taskRepository = {
       .doc(taskId)
       .update({
         ...data,
-        updated_at: new Date(),
+        updatedAt: new Date(),
       });
   },
 
@@ -71,15 +71,15 @@ export const taskRepository = {
 
   const snapshot = await firestore
     .collection(TASKS_COLLECTION)
-    .where("user_id", "==", userId)
-    .where("is_completed", "==", true)
-    .where("completed_at", ">=", start)
-    .where("completed_at", "<=", end)
+    .where("userId", "==", userId)
+    .where("isCompleted", "==", true)
+    .where("completedAt", ">=", start)
+    .where("completedAt", "<=", end)
     .get();
 
   return snapshot.docs.map(doc => ({
     ...(doc.data() as Task),
-    task_id: doc.id,
+    taskId: doc.id,
   }));
 },
 
@@ -90,15 +90,15 @@ async getTodayUncompletedDueTasks(userId: string): Promise<Task[]> {
 
   const snapshot = await firestore
     .collection(TASKS_COLLECTION)
-    .where("user_id", "==", userId)
-    .where("is_completed", "==", false)
-    .where("end_time", ">=", start)
-    .where("end_time", "<=", end)
+    .where("userId", "==", userId)
+    .where("isCompleted", "==", false)
+    .where("endTime", ">=", start)
+    .where("endTime", "<=", end)
     .get();
 
   return snapshot.docs.map(doc => ({
     ...(doc.data() as Task),
-    task_id: doc.id,
+    taskId: doc.id,
   }));
 },
 
