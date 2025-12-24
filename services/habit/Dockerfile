@@ -2,7 +2,7 @@ FROM node:18-slim
 
 WORKDIR /usr/src/app
 
-COPY package*.json ./
+COPY services/habit/package*.json ./
 RUN npm ci
 
 COPY . .
