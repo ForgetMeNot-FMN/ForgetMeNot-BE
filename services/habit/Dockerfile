@@ -1,11 +1,10 @@
 FROM node:18-slim
 
-WORKDIR /usr/src/app/services/habit
-
-COPY services/habit/package*.json ./
-RUN npm ci
+WORKDIR /usr/src/app
 
 COPY . .
+
+RUN npm ci
 
 RUN npm run build
 
