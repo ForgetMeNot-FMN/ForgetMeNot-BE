@@ -1,8 +1,8 @@
 import dotenv from "dotenv";
-dotenv.config();
+dotenv.config({ path: "/temp/.env" });
 import admin from "firebase-admin";
 // Import getFirestore from the specific firestore sub-module
-import { getFirestore } from 'firebase-admin/firestore'; // <--- This is the key change!
+import { getFirestore } from "firebase-admin/firestore"; // <--- This is the key change!
 
 if (!admin.apps.length) {
   const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
