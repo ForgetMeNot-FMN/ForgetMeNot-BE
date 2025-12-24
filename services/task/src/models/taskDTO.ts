@@ -1,12 +1,22 @@
 export interface taskDTO {
   title: string;
   description?: string;
-
-  duration_minutes?: number | null;
-
+  durationMinutes?: number | null;
+  startDate?: string | null; // ! ekledim ama hiç kullanmıyorum kodda
+  endDate?: string | null; // ! ekledim ama hiç kullanmıyorum kodda
   // kullanıcı göndermezse backend now() veriyor ama yine de opsiyonel
-  start_time?: string;
-
+  startTime?: string | Date | null;
   // kullanıcı verebilir ya da duration+start_time ile hesaplanır
-  due_date?: string;
+  endTime?: string | Date | null;
+  locationTrigger?: LocationTrigger;
+}
+
+export type GeoEvent = "enter" | "exit";
+
+export interface LocationTrigger {
+  enabled: boolean;
+  name?: string; // "Office"
+  latitude: number;
+  longitude: number;
+  event: GeoEvent;
 }

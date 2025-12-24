@@ -6,22 +6,22 @@ import { gardenRepository } from "./gardenRepository";
 
 class FlowerService {
   async createFlower(userId: string, data: any) {
-    if (!data?.flower_name) throw new Error("flower_name is required");
+    if (!data?.flowerName) throw new Error("flowerName is required");
     if (!data?.type) throw new Error("flower type is required");
 
     const flower = await flowerRepository.create(userId, {
-      flower_name: data.flower_name,
+      flowerName: data.flowerName,
       type: data.type,
 
       // Create olunca otomatik ayarlanması
-      growth_stage: GrowthStage.SEED,
-      is_alive: true,
-      water_count: 0,
-      last_watered_at: null,
+      growthStage: GrowthStage.SEED,
+      isAlive: true,
+      waterCount: 0,
+      lastWateredAt: null,
 
     });
 
-    logger.info("Flower created", { userId, flowerId: flower.flower_id });
+    logger.info("Flower created", { userId, flowerId: flower.flowerId });
 
     return flower;
   }
@@ -33,26 +33,26 @@ class FlowerService {
 
   // Otomatik çiçek öldürme
   // Çiçek seed ya da sprout evresinde ve 30 günden uzun süre bakılmadıysa çalışır
-  if (flower.is_alive && flower.growth_stage !== GrowthStage.BLOOM) {
-    const lastActivity = flower.last_watered_at
-      ? dayjs(flower.last_watered_at)
-      : dayjs(flower.created_at);
+  if (flower.isAlive && flower.growthStage !== GrowthStage.BLOOM) {
+    const lastActivity = flower.lastWateredAt
+      ? dayjs(flower.lastWateredAt)
+      : dayjs(flower.createdAt);
 
     const diffDays = dayjs().diff(lastActivity, "day");
 
     if (diffDays >= 30) {
       await flowerRepository.update(userId, flowerId, {
-        is_alive: false,
+        isAlive: false,
       });
 
       logger.warn("Flower died.", {
         userId,
         flowerId,
-        days_without_water: diffDays,
-        stage: flower.growth_stage,
+        daysWithoutWater: diffDays,
+        stage: flower.growthStage,
       });
 
-      flower.is_alive = false;
+      flower.isAlive = false;
     }
   }
 
@@ -68,7 +68,7 @@ class FlowerService {
   // Get All Flowers that are bloomed
   async getAllBloomedFlowers(userId: string) {
   const flowers = await flowerRepository.getAll(userId);
-  return flowers.filter(f => f.growth_stage === GrowthStage.BLOOM);
+  return flowers.filter(f => f.growthStage === GrowthStage.BLOOM);
 }
 
   // Water Flower
@@ -82,19 +82,19 @@ class FlowerService {
   }
 
   const flower = await this.getFlower(userId, flowerId);
-  if (!flower.is_alive) throw new Error("Flower is dead");
+  if (!flower.isAlive) throw new Error("Flower is dead");
 
-  let newWaterCount = flower.water_count + 1;
-  let growthStage = flower.growth_stage;
+  let newWaterCount = flower.waterCount + 1;
+  let growthStage = flower.growthStage;
 
   if (newWaterCount === 3) growthStage = GrowthStage.SPROUT;
   if (newWaterCount === 7) growthStage = GrowthStage.BLOOM;
 
   // Flower update
   await flowerRepository.update(userId, flowerId, {
-    water_count: newWaterCount,
-    last_watered_at: new Date(),
-    growth_stage: growthStage,
+    waterCount: newWaterCount,
+    lastWateredAt: new Date(),
+    growthStage: growthStage,
   });
 
   // Garden ın suyunu azaltma
@@ -111,9 +111,9 @@ class FlowerService {
 
   return {
     flower: {
-      water_count: newWaterCount,
-      growth_stage: growthStage,
-      last_watered_at: new Date(),
+      waterCount: newWaterCount,
+      growthStage: growthStage,
+      lastWateredAt: new Date(),
     },
     garden: {
       waterLeft: garden.water - 1,
@@ -127,18 +127,18 @@ class FlowerService {
   async killFlower(userId: string, flowerId: string) {
     const flower = await this.getFlower(userId, flowerId);
     if (!flower) throw new Error("Flower not found");
-    if (!flower.is_alive) throw new Error("Flower already dead");
+    if (!flower.isAlive) throw new Error("Flower already dead");
 
     //  Bloom evresi kontrolü
-    if (flower.growth_stage === GrowthStage.BLOOM) {
+    if (flower.growthStage === GrowthStage.BLOOM) {
         throw new Error("Bloom flowers cannot die");
     }
 
     const now = dayjs();
 
-    const lastActivity = flower.last_watered_at
-        ? dayjs(flower.last_watered_at)
-        : dayjs(flower.created_at);
+    const lastActivity = flower.lastWateredAt
+        ? dayjs(flower.lastWateredAt)
+        : dayjs(flower.createdAt);
 
     const diffDays = now.diff(lastActivity, "day");
 
@@ -149,13 +149,13 @@ class FlowerService {
     }
 
     await flowerRepository.update(userId, flowerId, {
-        is_alive: false,
+        isAlive: false,
     });
 
     logger.warn("Flower died after 1 month of inactivity", {
         userId,
         flowerId,
-        days_without_water: diffDays,
+        daysWithoutWater: diffDays,
     });
     }
 

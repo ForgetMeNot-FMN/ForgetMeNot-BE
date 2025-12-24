@@ -1,14 +1,28 @@
 export interface Task {
-  task_id: string;
-  user_id: string;
+  taskId: string;
+  userId: string;
   title: string;
   description?: string;
-  duration_minutes: number;
-  start_time: string;
-  end_time?: Date | null; // duration eklenirse otomatik gelicek
-  is_active: boolean;
-  is_completed: boolean;
-  completed_at?: Date | null; 
-  created_at: Date;
-  updated_at?: Date;
+  durationMinutes: number | null;
+  startTime: Date | null;
+  endTime?: Date | null; // duration eklenirse otomatik gelicek
+  startDate?: string | null; // YYYY-MM-DD ! ekledim ama hiç kullanmıyorum kodda
+  endDate?: string | null; // YYYY-MM-DD ! ekledim ama hiç kullanmıyorum kodda
+  locationTrigger?: LocationTrigger;
+  isActive: boolean;
+  isCompleted: boolean;
+  completedAt?: Date | null; 
+  createdAt: Date;
+  updatedAt?: Date;
 }
+
+export type GeoEvent = "enter" | "exit";
+
+export interface LocationTrigger {
+  enabled: boolean;
+  name?: string; // "Office"
+  latitude: number;
+  longitude: number;
+  event: GeoEvent;
+}
+

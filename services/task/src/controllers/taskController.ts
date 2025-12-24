@@ -49,6 +49,27 @@ export async function deleteTaskHandler(req: Request, res: Response) {
   }
 }
 
+export async function updateTaskHandler(req: Request, res: Response) {
+  try {
+    const { taskId } = req.params;
+    const body = req.body;
+
+    const updatedTask = await taskService.updateTask(taskId, body);
+
+    return res.json({
+      success: true,
+      data: updatedTask,
+    });
+
+  } catch (err: any) {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+}
+
+
 export async function completeTaskHandler(req: Request, res: Response) {
   try {
     const { taskId, userId } = req.params;

@@ -2,6 +2,7 @@ import { taskRepository } from "./taskRepository";
 import { logger } from "../utils/logger";
 import { taskDTO } from "../models/taskDTO";
 import { gardenClient } from "./gardenClient";
+import { normalizeDateOnly, normalizeDateTime } from "../utils/dateParser";
 import dayjs from "dayjs";
 
 
@@ -40,45 +41,56 @@ class TaskService {
     throw new Error("Task title is required");
   }
 
-  // duration_minutes integer olarak kalması için
-  const dm = body.duration_minutes;
+  // durationMinutes integer olarak kalması için
+  const dm = body.durationMinutes;
 
+  
   if (dm !== undefined && dm !== null) {
     if (
       typeof dm !== "number" ||
       !Number.isInteger(dm) ||
       dm <= 0
     ) {
-      logger.warn("Invalid duration_minutes", { userId, dm });
+      logger.warn("Invalid durationMinutes", { userId, dm });
       throw new Error(
-        "duration_minutes must be a positive integer in minutes or null"
+        "durationMinutes must be a positive integer in minutes or null"
       );
     }
   }
 
-  if (!body.start_time)
-    throw new Error("start_time is required");
+  if (!body.startTime)
+    throw new Error("startTime is required");
 
-  let endTime: Date | null = null;
+  const startTime = normalizeDateTime(body.startTime);
+  const endTime = body.endTime ? normalizeDateTime(body.endTime) : null;
 
-  if (dm) {
-    const start = new Date(body.start_time);
-    endTime = new Date(start.getTime() + dm * 60000); // dakika → ms
+  const startDate = normalizeDateOnly(body.startDate);
+  const endDate = normalizeDateOnly(body.endDate);
+
+  // Duration varsa endTime'ın otomatik hesaplanması
+  let finalEndTime = endTime;
+
+  if (dm && startTime && !endTime) {
+    finalEndTime = new Date(startTime.getTime() + dm * 60000);
   }
+
 
   const task = await taskRepository.create(userId, {
     title: body.title,
     description: body.description || "",
-    duration_minutes: dm ?? null, // null ise null olarak gitmesi için
-    start_time: body.start_time,
-    end_time: endTime,
-    is_active: true,
-    is_completed: false,
+    durationMinutes: dm ?? null, // null ise null olarak gitmesi için
+    startTime,
+    endTime,
+    startDate: body.startDate ?? null,
+    endDate: body.endDate ?? null,
+    locationTrigger: body.locationTrigger ?? null,
+    isActive: true,
+    isCompleted: false,
   });
 
   logger.info("Task created successfully", {
     userId,
-    taskId: task.task_id,
+    taskId: task.taskId,
   });
 
   return task;
@@ -94,17 +106,71 @@ class TaskService {
     logger.info("Task deleted", { taskId });
   }
 
+  async updateTask(taskId: string, body: Partial<taskDTO>) {
+  logger.info("Update task request", { taskId });
+
+  const task = await taskRepository.getTaskById(taskId);
+  if (!task) throw new Error("Task not found");
+
+  const updateData: any = {};
+
+  if (body.title !== undefined) updateData.title = body.title;
+
+  if (body.description !== undefined)
+    updateData.description = body.description;
+
+  if (body.startDate !== undefined)
+  updateData.startDate = normalizeDateOnly(body.startDate);
+
+  if (body.endDate !== undefined)
+  updateData.endDate = normalizeDateOnly(body.endDate);
+
+  if (body.startTime !== undefined)
+  updateData.startTime = normalizeDateTime(body.startTime);
+
+  if (body.endTime !== undefined)
+  updateData.endTime = normalizeDateTime(body.endTime);
+
+  if (body.locationTrigger !== undefined)
+    updateData.locationTrigger = body.locationTrigger;
+
+  let duration = body.durationMinutes ?? task.durationMinutes;
+
+  let startTime =
+    body.startTime !== undefined
+      ? (typeof body.startTime === "string"
+          ? new Date(body.startTime)
+          : body.startTime)
+      : task.startTime;
+
+  if (duration && startTime) {
+    updateData.durationMinutes = duration;
+    updateData.startTime = startTime;
+    updateData.endTime = new Date(startTime.getTime() + duration * 60000);
+  }
+
+  await taskRepository.update(taskId, updateData);
+
+  logger.info("Task updated", { taskId });
+
+  return {
+    ...task,
+    ...updateData,
+  };
+}
+
+
   async completeTask(taskId: string, userId: string) {
   const task = await taskRepository.getTaskById(taskId);
   if (!task) throw new Error("Task not found");
 
-  if (task.is_completed)
+  if (task.isCompleted)
     throw new Error("Task already completed");
 
   await taskRepository.update(taskId, {
-    is_completed: true,
-    is_active: false,
-    completed_at: new Date(),
+    isCompleted: true,
+    isActive: false,
+    completedAt: new Date(),
   });
 
   logger.info("Task completed", { taskId, userId });
@@ -136,9 +202,9 @@ async getTodayStats(userId: string) {
 
   return {
     date: dayjs().format("YYYY-MM-DD"),
-    completed_today: todayCompleted.length,
-    pending_today: todayDue.length,
-    completion_rate: completionRate,
+    completedToday: todayCompleted.length,
+    pendingToday: todayDue.length,
+    completionRate: completionRate,
   };
 }
 
@@ -146,15 +212,15 @@ async getTodayStats(userId: string) {
 async getOverallStats(userId: string) {
   const tasks = await taskRepository.getTasksByUserId(userId);
 
-  const completed = tasks.filter(t => t.is_completed).length;
+  const completed = tasks.filter(t => t.isCompleted).length;
   const total = tasks.length;
 
   const rate = total === 0 ? 0 : Math.round((completed / total) * 100);
 
   return {
-    total_tasks: total,
-    completed_tasks: completed,
-    overall_completion_rate: rate,
+    totalTasks: total,
+    completedTasks: completed,
+    overallCompletionRate: rate,
   };
 }
 

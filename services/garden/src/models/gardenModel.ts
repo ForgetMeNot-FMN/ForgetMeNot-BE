@@ -1,10 +1,10 @@
 export interface Garden {
-  user_id: string;
+  userId: string;
   coins: number;
   water: number;
   streak: number;
-  total_flowers: number;
-  total_watered_count: number;
+  totalFlowers: number;
+  totalWateredCount: number;
   lastWateredDate: string;
-  updated_at: Date;
+  updatedAt: Date;
 }

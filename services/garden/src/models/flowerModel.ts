@@ -1,14 +1,14 @@
 import { GrowthStage } from "../utils/enums";
 
 export interface Flower {
-  flower_id: string;    // Doc id ile aynı
-  flower_name: string;
+  flowerId: string;    // Doc id ile aynı
+  flowerName: string;
   type: string;               // "Forget Me Not", vs.
-  growth_stage: GrowthStage.SEED | GrowthStage.SPROUT | GrowthStage.BLOOM;
-  is_alive: boolean;
+  growthStage: GrowthStage.SEED | GrowthStage.SPROUT | GrowthStage.BLOOM;
+  isAlive: boolean;
 
-  water_count: number;
-  last_watered_at?: Date;
+  waterCount: number;
+  lastWateredAt?: Date;
 
-  created_at: Date;
+  createdAt: Date;
 }
