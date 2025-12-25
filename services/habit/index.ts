@@ -7,6 +7,11 @@ import { globalRateLimit } from "./src/middlewares/rateLimitMiddleware";
 const app = express();
 app.use(cors());
 
+app.get("/", (_req, res) => {
+  // Health check endpoint
+  res.status(200).send("OK");
+});
+
 app.use(express.json());
 app.use(globalRateLimit);
 app.use("/habit", habitRouter);
