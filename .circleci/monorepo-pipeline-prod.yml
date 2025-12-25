@@ -129,7 +129,7 @@ jobs:
               --min-instances=1 \
               --max-instances=20 \
               --quiet \
-              --ingress internal-and-cloud-load-balancing
+              --ingress all
 
 workflows:
   run-garden-service-workflow:
