@@ -15,4 +15,6 @@ workflows:
             services/garden/.* run-garden-service-workflow true
             services/user/.* run-user-service-workflow true
             services/habit/.* run-habit-service-workflow true
+            services/auth/.* run-auth-service-workflow true
+            services/task/.* run-task-service-workflow true
           config-path: .circleci/monorepo-pipeline-prod.yml

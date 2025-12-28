@@ -1,3 +1,5 @@
+import dotenv from "dotenv";
+dotenv.config({ path: "/temp/.env" });
 import express from "express";
 import cors from "cors";
 import authRoutes from "./src/routes/router";
