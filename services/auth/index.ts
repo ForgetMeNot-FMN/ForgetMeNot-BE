@@ -13,13 +13,13 @@ app.use(cors());
 app.use(express.json());
 app.use(globalRateLimit);
 
+const PORT = process.env.PORT || 8080;
+
 app.get("/health", (_req, res) => {
-  res.json({ ok: true, service: "auth", env: envs.PORT });
+  res.json({ ok: true, service: "auth", env: PORT });
 });
 
 app.use("/auth", authRoutes);
-
-const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, () => {
   logger.info(`Auth service listening on port ${PORT}`);
