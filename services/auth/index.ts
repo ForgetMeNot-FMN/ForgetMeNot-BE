@@ -19,8 +19,10 @@ app.get("/health", (_req, res) => {
 
 app.use("/auth", authRoutes);
 
-app.listen(envs.PORT, () => {
-  logger.info(`Auth service listening on port ${envs.PORT}`);
+const PORT = process.env.PORT || 8080;
+
+app.listen(PORT, () => {
+  logger.info(`Auth service listening on port ${PORT}`);
 });
 
 export default app;
