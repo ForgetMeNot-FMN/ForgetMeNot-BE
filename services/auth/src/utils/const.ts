@@ -12,5 +12,6 @@ function requireEnv(key: string): string {
 export const envs = {
   FIREBASE_SERVICE_ACCOUNT: requireEnv("FIREBASE_SERVICE_ACCOUNT"),
   JWT_SECRET: requireEnv("JWT_SECRET"),
+  GARDEN_SERVICE_URL: requireEnv("GARDEN_SERVICE_URL"),
   PORT: process.env.PORT || "8080",
 };
