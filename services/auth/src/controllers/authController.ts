@@ -12,7 +12,6 @@ export const authController = {
           message: "idToken is required",
         });
       }
-      console.log("🔑 Firebase ID Token received:", idToken.substring(0, 10) + "...");
       const data = await firebaseAuthService.loginWithFirebase(idToken);
 
       return res.status(200).json({
