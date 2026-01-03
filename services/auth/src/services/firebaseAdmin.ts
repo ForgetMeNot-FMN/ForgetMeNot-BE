@@ -1,8 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 import admin from "firebase-admin";
-// Import getFirestore from the specific firestore sub-module
-import { getFirestore } from 'firebase-admin/firestore'; // <--- This is the key change!
+import { getFirestore } from 'firebase-admin/firestore';
 
 if (!admin.apps.length) {
   const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
@@ -16,8 +15,6 @@ if (!admin.apps.length) {
 
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
-    // You might also want to set databaseURL here if you're using Realtime Database,
-    // but for Firestore, it's handled by the admin.firestore() call.
   });
 }
 
