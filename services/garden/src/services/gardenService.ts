@@ -6,8 +6,8 @@ class GardenService {
 
   async createGarden(userId: string) {
     const existing = await gardenRepository.getByUserId(userId);
+    logger.info("Creating garden", { userId, existing: !!existing });
     if (existing) throw new Error("Garden already exists");
-
     return gardenRepository.createDefault(userId);
   }
 

@@ -87,7 +87,7 @@ jobs:
             npm ci
             cd ../../
 
-            gcloud run deploy forgetmenot-habit-service-prod \
+            gcloud run deploy forgetmenot-garden-service-prod \
               --cpu=1 \
               --memory=512Mi \
               --source ./services/garden \
