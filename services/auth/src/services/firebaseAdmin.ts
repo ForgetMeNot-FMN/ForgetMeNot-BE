@@ -2,9 +2,10 @@ import dotenv from "dotenv";
 dotenv.config();
 import admin from "firebase-admin";
 import { getFirestore } from 'firebase-admin/firestore';
+import { envs } from "../utils/const";
 
 if (!admin.apps.length) {
-  const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
+  const serviceAccountJson = envs.FIREBASE_SERVICE_ACCOUNT;
 
   if (!serviceAccountJson) {
     throw new Error("FIREBASE_SERVICE_ACCOUNT env not set");

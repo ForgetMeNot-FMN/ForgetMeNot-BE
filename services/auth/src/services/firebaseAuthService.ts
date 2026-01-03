@@ -4,9 +4,10 @@ import { firestore } from "../services/firebaseAdmin";
 import { tokenService } from "./tokenService";
 import { AuthResponse, AuthUser } from "../models/authDtos";
 import { logger } from "../utils/logger";
+import { envs } from "../utils/const";
 
 const USERS_COLLECTION = "users";
-const GARDEN_SERVICE_URL = process.env.GARDEN_SERVICE_URL;
+const GARDEN_SERVICE_URL = envs.GARDEN_SERVICE_URL;
 
 export const firebaseAuthService = {
   async loginWithFirebase(idToken: string): Promise<AuthResponse> {
@@ -31,7 +32,7 @@ export const firebaseAuthService = {
         authProvider: decoded.firebase.sign_in_provider,
         age: null,
         gender: null,
-        allowNotification: true,
+        allowNotification: false,
         permissions: {
           allowCalendar: false,
           allowKVKK: false,

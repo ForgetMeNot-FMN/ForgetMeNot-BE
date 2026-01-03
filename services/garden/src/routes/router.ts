@@ -16,32 +16,32 @@ import {
   waterFlower,
   deleteFlower,
 } from "../controllers/flowerController";
+import { authMiddleware } from "../middlewares/authMiddleware";
 
 const router = Router();
 
-router.post("/:userId", createGardenHandler);
-router.get("/:userId", getGardenHandler);
+router.post("/:userId", authMiddleware, createGardenHandler);
+router.get("/:userId", authMiddleware, getGardenHandler);
 
-router.post("/:userId/water", waterGardenHandler);
-router.post("/:userId/add-water", addWaterHandler);
-router.post("/:userId/add-coins", addCoinsHandler);
+router.post("/:userId/water", authMiddleware, waterGardenHandler);
+router.post("/:userId/add-water", authMiddleware, addWaterHandler);
+router.post("/:userId/add-coins", authMiddleware, addCoinsHandler);
 
-router.delete("/:userId", deleteGardenHandler);
+router.delete("/:userId", authMiddleware, deleteGardenHandler);
 
 
 /**
  * FLOWER ROUTES
  */
 
-router.post("/:userId/flowers", createFlower);
+router.post("/:userId/flowers", authMiddleware, createFlower);
 
-router.get("/:userId/flowers", getAllFlowers);
-router.get("/:userId/flowers/bloomed", getBloomedFlowers);
-router.get("/:userId/flowers/:flowerId", getFlower);
-
+router.get("/:userId/flowers", authMiddleware, getAllFlowers);
+router.get("/:userId/flowers/bloomed", authMiddleware, getBloomedFlowers);
+router.get("/:userId/flowers/:flowerId", authMiddleware, getFlower);
 // Water flower
-router.post("/:userId/flowers/:flowerId/water", waterFlower);
+router.post("/:userId/flowers/:flowerId/water", authMiddleware, waterFlower);
 
-router.delete("/:userId/flowers/:flowerId", deleteFlower);
+router.delete("/:userId/flowers/:flowerId", authMiddleware, deleteFlower);
 
 export default router;
