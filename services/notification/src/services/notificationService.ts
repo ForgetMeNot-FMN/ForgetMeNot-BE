@@ -3,6 +3,9 @@ import { logger } from "../utils/logger";
 import { notificationDto, UpdateNotificationDto } from "../models/notificationDTO";
 import { AppNotification } from "../models/notificationModel";
 import { userClient } from "./userClient";
+import { cloudTasksClient } from "./cloudTasksClient";
+import { notificationDispatcher } from "./notificationDispatcher";
+import dayjs from "dayjs";
 
 class NotificationService {
   
@@ -109,6 +112,17 @@ class NotificationService {
             notificationId: notification.notificationId,
         });
 
+        // Cloud Tasks için
+        if (notification.scheduleType === "IMMEDIATE") {
+          await cloudTasksClient.enqueueNotificationDispatch(
+          notification.notificationId);
+        }
+
+        // ONCE = belirli zamanda dispatch
+        else if (notification.scheduleType === "ONCE" && notification.scheduledAt) {
+          await cloudTasksClient.enqueueNotificationDispatch(notification.notificationId, new Date(notification.scheduledAt));
+        }
+
     return notification;
   }
 
@@ -184,6 +198,38 @@ class NotificationService {
   async getPendingScheduledNotifications() {
     return notificationRepository.getPendingScheduledNotifications();
   }
+
+  canDispatch(notification: AppNotification): boolean {
+    if (!notification.enabled) return false;
+    if (notification.isDeleted) return false;
+
+    if (
+      notification.deliveryStatus === "SENT" ||
+      notification.deliveryStatus === "CANCELLED" ||
+      notification.deliveryStatus === "PROCESSING"
+    ) {
+      return false;
+    }
+
+    return true;
+  }
+
+
+  async dispatchNotification(notificationId: string) {
+    const notification = await notificationRepository.getNotificationById(notificationId);
+  if (!notification) return;
+  if (!this.canDispatch(notification)) return;
+
+  try {
+    await notificationDispatcher.dispatch(notificationId);
+  } catch (err) {
+    // Cloud Tasks retry için error yukarı fırlatılır
+    throw err;
+    }
+  }
+
+
+
 }
 
 export const notificationService = new NotificationService();

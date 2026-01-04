@@ -161,6 +161,31 @@ export async function getPendingScheduledNotificationsHandler(req: Request, res:
   }
 }
 
+export async function dispatchNotificationHandler(req: Request, res: Response) {
+  try {
+    const { notificationId } = req.body;
+
+    if (!notificationId) {
+      return res.status(400).json({
+        success: false,
+        message: "notificationId is required",
+      });
+    }
+
+    await notificationService.dispatchNotification(notificationId);
+
+    return res.json({
+      success: true,
+      message: "Notification dispatch task executed",
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+}
+
 export async function dispatchScheduledNotificationsHandler(
   req: Request,
   res: Response

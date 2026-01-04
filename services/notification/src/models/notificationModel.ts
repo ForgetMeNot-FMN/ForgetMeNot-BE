@@ -47,3 +47,8 @@ export interface AppNotification {
   isDeleted: boolean;
   createdBySystem: boolean;
 }
+
+// Cloud Tasks için
+export interface NotificationDispatchPayload {
+  notificationId: string;
+}

@@ -10,11 +10,16 @@ import {
   disableNotificationHandler,
   getActiveNotificationsHandler,
   getPendingScheduledNotificationsHandler,
+  dispatchNotificationHandler,
   dispatchScheduledNotificationsHandler
 } from "../controllers/notificationController";
 
 const router = Router();
 
+// INTERNAL (Front end kullanmayacak!)- Cloud Tasks için 
+router.post("/internal/notifications/dispatch", dispatchNotificationHandler);
+
+// Get notifications of a user
 // Get all notifications of a user = /notifications/user/{userId}
 // Get all notifications of a source type = /notifications/user/{userId}?sourceType=HABIT | TASK | FLOWER | SYSTEM
 router.get("/user/:userId", getUserNotificationsHandler);

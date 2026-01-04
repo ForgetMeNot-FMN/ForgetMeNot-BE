@@ -10,6 +10,14 @@ export function shouldSendNow(notification: AppNotification): boolean {
   dayjs.extend(timezone);
   const now = dayjs();
 
+  // Aynı notification dakikada 1'den fazla gitmesin diye
+  if (notification.lastAttemptAt) {
+    const lastAttempt = dayjs(notification.lastAttemptAt).tz(notification.timezone);
+    if (now.diff(lastAttempt, "minute") < 1) {
+      return false;
+    }
+  }
+
   switch (notification.scheduleType) {
     case "ONCE":
       return shouldSendOnce(notification, now);
