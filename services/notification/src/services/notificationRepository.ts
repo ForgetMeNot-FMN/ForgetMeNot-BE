@@ -10,7 +10,7 @@ const NOTIFICATION_COLLECTION = "notifications";
 export const notificationRepository = {
 
   // Kullanıcının tüm notificationları
-  async getNotificationsByUserId(userId: string, limit: number = 10, lastNotificationId?: string): Promise<{
+  async getNotificationsByUserId(userId: string, limit: number = 10, lastNotificationId?: string, sourceType?: "HABIT" | "TASK" | "FLOWER" | "SYSTEM"): Promise<{
   notifications: AppNotification[];
   nextCursor?: string;}> {
 
@@ -18,7 +18,14 @@ export const notificationRepository = {
   let query = firestore
     .collection(NOTIFICATION_COLLECTION)
     .where("userId", "==", userId)
-    .where("isDeleted", "==", false)
+    .where("isDeleted", "==", false);
+
+  // Source type kontrolü
+  if (sourceType) {
+    query = query.where("sourceType", "==", sourceType);
+  }
+
+  query = query
     .orderBy("createdAt", "desc")
     .limit(limit);
 
