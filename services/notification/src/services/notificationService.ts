@@ -3,6 +3,9 @@ import { logger } from "../utils/logger";
 import { notificationDto, UpdateNotificationDto } from "../models/notificationDTO";
 import { AppNotification } from "../models/notificationModel";
 import { userClient } from "./userClient";
+import { cloudTasksClient } from "./cloudTasksClient";
+import { notificationDispatcher } from "./notificationDispatcher";
+import dayjs from "dayjs";
 
 class NotificationService {
   
@@ -109,10 +112,17 @@ class NotificationService {
             notificationId: notification.notificationId,
         });
 
-        // TODO:
-        // if (notification.scheduleType !== "IMMEDIATE") {
-        //   cloudTasksClient.enqueueNotificationDispatch(notification.notificationId);
-        // }
+        // Cloud Tasks için
+        if (notification.scheduleType === "IMMEDIATE") {
+          await cloudTasksClient.enqueueNotificationDispatch(
+          notification.notificationId);
+        }
+
+        // ONCE = belirli zamanda dispatch
+        else if (notification.scheduleType === "ONCE" && notification.scheduledAt) {
+          await cloudTasksClient.enqueueNotificationDispatch(notification.notificationId, new Date(notification.scheduledAt));
+        }
+
     return notification;
   }
 
@@ -207,18 +217,15 @@ class NotificationService {
 
   async dispatchNotification(notificationId: string) {
     const notification = await notificationRepository.getNotificationById(notificationId);
+  if (!notification) return;
+  if (!this.canDispatch(notification)) return;
 
-    if (!notification) {
-      logger.warn("Dispatch failed: notification not found", { notificationId });
-      return;
+  try {
+    await notificationDispatcher.dispatch(notificationId);
+  } catch (err) {
+    // Cloud Tasks retry için error yukarı fırlatılır
+    throw err;
     }
-
-    if (!this.canDispatch(notification)) {
-      logger.info("Dispatch skipped", { notificationId });
-      return;
-    }
-
-    // TODO: FCM send
   }
 
 

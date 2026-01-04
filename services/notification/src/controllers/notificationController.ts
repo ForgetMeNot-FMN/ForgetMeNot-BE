@@ -172,18 +172,11 @@ export async function dispatchNotificationHandler(req: Request, res: Response) {
       });
     }
 
-    // TODO:
-    // 1. Notification DB'den çekilecek
-    // 2. enabled kontrolü
-    // 3. deliveryStatus kontrolü
-    // 4. FCM ile gönderim
-    // 5. deliveryStatus update
-
     await notificationService.dispatchNotification(notificationId);
 
     return res.json({
       success: true,
-      message: "Dispatch endpoint reached (FCM not implemented yet)",
+      message: "Notification dispatch task executed",
     });
   } catch (err: any) {
     return res.status(500).json({

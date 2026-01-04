@@ -61,6 +61,17 @@ class NotificationDispatcher {
       }
     );
 
+    logger.info("FCM response", {
+      notificationId: notification.notificationId,
+      successCount: response.successCount,
+      failureCount: response.failureCount,
+      responses: response.responses.map(r => ({
+      success: r.success,
+      error: r.error?.code,
+      message: r.error?.message,
+      })),
+    });
+
     const invalidTokens: string[] = [];
 
     response?.responses.forEach((r, index) => {
