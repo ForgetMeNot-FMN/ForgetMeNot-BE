@@ -18,7 +18,7 @@ export const cloudTasksClient = {
     const task: any = {
       httpRequest: {
         httpMethod: "POST",
-        url: `${SERVICE_URL}/internal/notifications/dispatch`,
+        url: `${SERVICE_URL}/notifications/internal/notifications/dispatch`,
         headers: {
           "Content-Type": "application/json",
         },
