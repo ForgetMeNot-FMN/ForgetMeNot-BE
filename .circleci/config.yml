@@ -17,4 +17,5 @@ workflows:
             services/habit/.* run-habit-service-workflow true
             services/auth/.* run-auth-service-workflow true
             services/task/.* run-task-service-workflow true
+            services/notification/.* run-notification-service-workflow true
           config-path: .circleci/monorepo-pipeline-prod.yml
