@@ -171,7 +171,6 @@ export async function dispatchScheduledNotificationsHandler(
     await notificationService.getPendingScheduledNotifications();
 
   let dispatchedCount = 0;
-  console.log(notifications, "NOTIFICATIONS")
   for (const notification of notifications) {
     if (!notification.enabled) continue;
     if (notification.isDeleted) continue;
