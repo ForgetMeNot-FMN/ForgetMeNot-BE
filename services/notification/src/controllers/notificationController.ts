@@ -6,12 +6,13 @@ import { notificationService } from "../services/notificationService";
 export async function getUserNotificationsHandler(req: Request, res: Response) {
   try {
     const { userId } = req.params;
-    const { limit, cursor } = req.query;
+    const { limit, cursor, sourceType } = req.query;
 
     const result = await notificationService.getUserNotifications(
       userId,
       limit ? Number(limit) : undefined,
-      cursor as string
+      cursor as string,
+      sourceType as "HABIT" | "TASK" | "FLOWER" | "SYSTEM" | undefined
     );
 
     return res.json({ success: true, data: result });

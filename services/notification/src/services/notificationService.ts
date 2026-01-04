@@ -7,13 +7,14 @@ import { userClient } from "./userClient";
 class NotificationService {
   
     // User Notifications with pagination
-  async getUserNotifications(userId: string, limit?: number, cursor?: string) {
+  async getUserNotifications(userId: string, limit?: number, cursor?: string, sourceType?: "HABIT" | "TASK" | "FLOWER" | "SYSTEM") {
     logger.debug("Get notifications request", { userId, limit, cursor });
 
     const result = await notificationRepository.getNotificationsByUserId(
       userId,
       limit,
-      cursor
+      cursor,
+      sourceType
     );
 
     logger.debug("Notifications fetched", { userId, count: result.notifications.length });
@@ -34,8 +35,7 @@ class NotificationService {
 
     return notification;
   }
-
- 
+  
     // Create için validation
   private validateCreateBody(body: notificationDto) {
     if (!body.title) throw new Error("title is required");
