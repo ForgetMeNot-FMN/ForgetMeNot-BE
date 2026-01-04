@@ -79,7 +79,7 @@ export const notificationRepository = {
       notificationId: doc.id,
       userId,
 
-      deliveryStatus: "PENDING",
+      deliveryStatus: data.scheduleType === "IMMEDIATE" ? "PENDING" : "SCHEDULED",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       isDeleted: false,
