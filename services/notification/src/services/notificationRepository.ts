@@ -10,7 +10,7 @@ const NOTIFICATION_COLLECTION = "notifications";
 export const notificationRepository = {
 
   // Kullanıcının tüm notificationları
-  async getNotificationsByUserId(userId: string, limit: number = 10, lastNotificationId?: string): Promise<{
+  async getNotificationsByUserId(userId: string, limit: number = 10, lastNotificationId?: string, sourceType?: "HABIT" | "TASK" | "FLOWER" | "SYSTEM"): Promise<{
   notifications: AppNotification[];
   nextCursor?: string;}> {
 
@@ -18,7 +18,14 @@ export const notificationRepository = {
   let query = firestore
     .collection(NOTIFICATION_COLLECTION)
     .where("userId", "==", userId)
-    .where("isDeleted", "==", false)
+    .where("isDeleted", "==", false);
+
+  // Source type kontrolü
+  if (sourceType) {
+    query = query.where("sourceType", "==", sourceType);
+  }
+
+  query = query
     .orderBy("createdAt", "desc")
     .limit(limit);
 
@@ -79,7 +86,7 @@ export const notificationRepository = {
       notificationId: doc.id,
       userId,
 
-      deliveryStatus: "PENDING",
+      deliveryStatus: data.scheduleType === "IMMEDIATE" ? "PENDING" : "SCHEDULED",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       isDeleted: false,
@@ -171,7 +178,42 @@ export const notificationRepository = {
     ...(doc.data() as AppNotification),
     notificationId: doc.id,
   }));
-}
+},
 
+async markAsSent(notificationId: string) {
+  await firestore
+    .collection(NOTIFICATION_COLLECTION)
+    .doc(notificationId)
+    .update({
+      deliveryStatus: "SENT",
+      sentAt: new Date().toISOString(),
+      lastAttemptAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+},
+
+async markAsFailed(notificationId: string) {
+  await firestore
+    .collection(NOTIFICATION_COLLECTION)
+    .doc(notificationId)
+    .update({
+      deliveryStatus: "FAILED",
+      sentAt: new Date().toISOString(),
+      lastAttemptAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+},
+
+async markAsProcessing(notificationId: string) {
+  await firestore
+    .collection(NOTIFICATION_COLLECTION)
+    .doc(notificationId)
+    .update({
+      deliveryStatus: "PROCESSING",
+      sentAt: new Date().toISOString(),
+      lastAttemptAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+}
 
 };

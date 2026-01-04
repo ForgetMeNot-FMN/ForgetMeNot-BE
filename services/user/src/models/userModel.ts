@@ -14,6 +14,7 @@ export interface User {
   age: number | null;
   gender: string | null;
   allowNotification: boolean;
+  fcmTokens: string[];
   permissions: UserPermissions;
   created_at: Date;
 }
