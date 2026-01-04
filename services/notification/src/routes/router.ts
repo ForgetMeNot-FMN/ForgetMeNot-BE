@@ -9,10 +9,14 @@ import {
   enableNotificationHandler,
   disableNotificationHandler,
   getActiveNotificationsHandler,
-  getPendingScheduledNotificationsHandler
+  getPendingScheduledNotificationsHandler,
+  dispatchNotificationHandler
 } from "../controllers/notificationController";
 
 const router = Router();
+
+// INTERNAL (Front end kullanmayacak!)- Cloud Tasks için 
+router.post("/internal/notifications/dispatch", dispatchNotificationHandler);
 
 // Get notifications of a user
 router.get("/user/:userId", getUserNotificationsHandler);

@@ -109,6 +109,10 @@ class NotificationService {
             notificationId: notification.notificationId,
         });
 
+        // TODO:
+        // if (notification.scheduleType !== "IMMEDIATE") {
+        //   cloudTasksClient.enqueueNotificationDispatch(notification.notificationId);
+        // }
     return notification;
   }
 
@@ -184,6 +188,41 @@ class NotificationService {
   async getPendingScheduledNotifications() {
     return notificationRepository.getPendingScheduledNotifications();
   }
+
+  canDispatch(notification: AppNotification): boolean {
+    if (!notification.enabled) return false;
+    if (notification.isDeleted) return false;
+
+    if (
+      notification.deliveryStatus === "SENT" ||
+      notification.deliveryStatus === "CANCELLED" ||
+      notification.deliveryStatus === "PROCESSING"
+    ) {
+      return false;
+    }
+
+    return true;
+  }
+
+
+  async dispatchNotification(notificationId: string) {
+    const notification = await notificationRepository.getNotificationById(notificationId);
+
+    if (!notification) {
+      logger.warn("Dispatch failed: notification not found", { notificationId });
+      return;
+    }
+
+    if (!this.canDispatch(notification)) {
+      logger.info("Dispatch skipped", { notificationId });
+      return;
+    }
+
+    // TODO: FCM send
+  }
+
+
+
 }
 
 export const notificationService = new NotificationService();

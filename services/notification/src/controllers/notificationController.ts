@@ -156,3 +156,36 @@ export async function getPendingScheduledNotificationsHandler(req: Request, res:
     return res.status(400).json({ success: false, message: err.message });
   }
 }
+
+export async function dispatchNotificationHandler(req: Request, res: Response) {
+  try {
+    const { notificationId } = req.body;
+
+    if (!notificationId) {
+      return res.status(400).json({
+        success: false,
+        message: "notificationId is required",
+      });
+    }
+
+    // TODO:
+    // 1. Notification DB'den çekilecek
+    // 2. enabled kontrolü
+    // 3. deliveryStatus kontrolü
+    // 4. FCM ile gönderim
+    // 5. deliveryStatus update
+
+    await notificationService.dispatchNotification(notificationId);
+
+    return res.json({
+      success: true,
+      message: "Dispatch endpoint reached (FCM not implemented yet)",
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+}
+
