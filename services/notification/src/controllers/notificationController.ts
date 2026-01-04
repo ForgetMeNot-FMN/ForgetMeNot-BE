@@ -1,5 +1,8 @@
 import { Request, Response } from "express";
 import { notificationService } from "../services/notificationService";
+import { notificationDispatcher } from "../services/notificationDispatcher";
+import { shouldSendNow } from "../services/notificationScheduleEvaluator";
+import { logger } from "../utils/logger"
 
 
 // Get User Notifications with Pagination
@@ -156,4 +159,33 @@ export async function getPendingScheduledNotificationsHandler(req: Request, res:
   } catch (err: any) {
     return res.status(400).json({ success: false, message: err.message });
   }
+}
+
+export async function dispatchScheduledNotificationsHandler(
+  req: Request,
+  res: Response
+) {
+  logger.info("Dispatch scheduled notifications triggered");
+
+  const notifications =
+    await notificationService.getPendingScheduledNotifications();
+
+  let dispatchedCount = 0;
+  console.log(notifications, "NOTIFICATIONS")
+  for (const notification of notifications) {
+    if (!notification.enabled) continue;
+    if (notification.isDeleted) continue;
+    if (notification.deliveryStatus === "SENT") continue;
+
+    // zamanı geldiyse
+    if (!shouldSendNow(notification)) continue;
+    console.log("calling notification dispatcher");
+    await notificationDispatcher.dispatch(notification.notificationId);
+    dispatchedCount++;
+  }
+
+  res.status(200).json({
+    processed: notifications.length,
+    dispatched: dispatchedCount,
+  });
 }

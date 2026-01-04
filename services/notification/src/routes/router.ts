@@ -9,7 +9,8 @@ import {
   enableNotificationHandler,
   disableNotificationHandler,
   getActiveNotificationsHandler,
-  getPendingScheduledNotificationsHandler
+  getPendingScheduledNotificationsHandler,
+  dispatchScheduledNotificationsHandler
 } from "../controllers/notificationController";
 
 const router = Router();
@@ -44,5 +45,10 @@ router.delete("/:notificationId/soft", softDeleteNotificationHandler);
 
 // Delete 
 router.delete("/:notificationId", deleteNotificationHandler);
+
+router.post(
+  "/dispatch/scheduled",
+  dispatchScheduledNotificationsHandler
+);
 
 export default router;
