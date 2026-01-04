@@ -15,7 +15,7 @@ class FcmService {
       data,
       tokens,
     };
-
+    logger.info("Sending FCM push", { message });
     const response = await admin.messaging().sendEachForMulticast(message);
 
     logger.info("FCM push sent", {
