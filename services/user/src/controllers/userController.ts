@@ -49,3 +49,25 @@ export async function deleteUserHandler(req: Request, res: Response) {
     return res.status(400).json({ success: false, message: err.message });
   }
 }
+
+export async function setAllowNotificationHandler(req: Request, res: Response) {
+  try {
+    const { userId } = req.params;
+    const { allow } = req.body;
+    await userService.setAllowNotification(userId, allow);
+    return res.json({ success: true });
+  } catch (err: any) {
+    return res.status(400).json({ success: false, message: err.message });
+  }
+}
+
+export async function addFcmTokenHandler(req: Request, res: Response) {
+  try {
+    const { userId } = req.params;
+    const { token } = req.body;
+    await userService.addFcmToken(userId, token);
+    return res.json({ success: true });
+  } catch (err: any) {
+    return res.status(400).json({ success: false, message: err.message });
+  }
+}

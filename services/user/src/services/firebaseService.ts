@@ -1,5 +1,6 @@
 import { firestore } from "./firebaseAdmin";
 import { User } from "../models/userModel";
+import { FieldValue } from "firebase-admin/firestore";
 
 const USERS_COLLECTION = "users";
 
@@ -38,4 +39,10 @@ export const userRepository = {
   async delete(userId: string) {
     await firestore.collection(USERS_COLLECTION).doc(userId).delete();
   },
+
+  async addFcmToken(userId: string, token: string) {
+    await firestore.collection(USERS_COLLECTION).doc(userId).update({
+      fcmTokens: FieldValue.arrayUnion(token),
+    });
+  }
 };

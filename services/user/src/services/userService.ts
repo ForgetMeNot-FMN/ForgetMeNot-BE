@@ -19,6 +19,7 @@ class UserService {
       age: payload.age ?? null,
       gender: payload.gender ?? null,
       allowNotification: true,
+      fcmTokens: [],
       permissions: payload.permissions,
       created_at: new Date(),
     });
@@ -68,6 +69,18 @@ class UserService {
     await userRepository.delete(userId);
 
     logger.info("User deleted", { userId });
+  }
+
+  async setAllowNotification(userId: string, allow: boolean) {
+    logger.info("Set allow notification request", { userId, allow });
+    await userRepository.update(userId, { allowNotification: allow });
+    logger.info("Allow notification updated", { userId, allow });
+  }
+
+  async addFcmToken(userId: string, token: string) {
+    logger.info("Add FCM token request", { userId });
+    await userRepository.addFcmToken(userId, token);
+    logger.info("FCM token added", { userId });
   }
 }
 
