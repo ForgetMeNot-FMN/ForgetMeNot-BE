@@ -56,8 +56,8 @@ class NotificationDispatcher {
       notification.title,
       notification.body,
       {
-        notificationId: notification.notificationId,
-        type: notification.type,
+        notificationId: String(notification.notificationId),
+        type: String(notification.type),
       }
     );
 
@@ -77,8 +77,10 @@ class NotificationDispatcher {
     response?.responses.forEach((r, index) => {
       if (
         !r.success &&
-        r.error?.code ===
-          "messaging/registration-token-not-registered"
+        (
+          r.error?.code === "messaging/registration-token-not-registered" ||
+          r.error?.code === "messaging/invalid-registration-token"
+        )
       ) {
         invalidTokens.push(tokens[index]);
       }
