@@ -17,6 +17,7 @@ import {
   deleteFlower,
 } from "../controllers/flowerController";
 import { authMiddleware } from "../middlewares/authMiddleware";
+import { addDefaultFlower, getDefaultFlowerDetails } from "../controllers/flowerDefinitonsController";
 
 const router = Router();
 
@@ -28,7 +29,6 @@ router.post("/:userId/add-water", authMiddleware, addWaterHandler);
 router.post("/:userId/add-coins", authMiddleware, addCoinsHandler);
 
 router.delete("/:userId", authMiddleware, deleteGardenHandler);
-
 
 /**
  * FLOWER ROUTES
@@ -43,5 +43,12 @@ router.get("/:userId/flowers/:flowerId", authMiddleware, getFlower);
 router.post("/:userId/flowers/:flowerId/water", authMiddleware, waterFlower);
 
 router.delete("/:userId/flowers/:flowerId", authMiddleware, deleteFlower);
+
+// Flower Definitions
+router.get("/flowers/definitions/:type", authMiddleware, getDefaultFlowerDetails);
+
+// router.post("/flowers/definitions", addDefaultFlower);
+// unprotected endpoint only should be used for adding default flower definitons to db
+// developers can add flowers by hitting this endpoint by running service locally
 
 export default router;
