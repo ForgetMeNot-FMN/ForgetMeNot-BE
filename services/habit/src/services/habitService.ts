@@ -34,87 +34,93 @@ class HabitService {
     });
     if (habitData.notificationEnabled) {
       try {
-      const timezone = habitData.timezone ?? "Europe/Istanbul";
-      const timeOfDay = habitData.notificationTime ?? "09:00";
-      const sourceId = habit.id;
-      logger.info("Creating notification for habit", {
-        userId,
-        habitId: habit.id,
-        timezone,
-        timeOfDay,
-        notificationPriority: habitData.notificationPriority,
-        notificationType: habitData.notificationType,
-      });
-      if (habit.schedule.type === "weekly") {
-        await createHabitNotification({
+        const timezone = habitData.timezone ?? "Europe/Istanbul";
+        const timeOfDay = habitData.notificationTime ?? "09:00";
+        const sourceId = habit.id;
+        logger.info("Creating notification for habit", {
           userId,
-          title: habit.title,
-          sourceId,
-          sourceType: "HABIT",
-
-          scheduleType: "RECURRING",
+          habitId: habit.id,
           timezone,
-
-          repeatRule: {
-            interval: "weekly",
-            daysOfWeek: habit.schedule.days,
-            timesOfDay: [timeOfDay],
-          },
-
-          priority: habitData.notificationPriority,
-          type: habitData.notificationType,
+          timeOfDay,
+          notificationPriority: habitData.notificationPriority,
+          notificationType: habitData.notificationType,
         });
-      }
+        if (habit.schedule.type === "weekly") {
+          await createHabitNotification({
+            userId,
+            title: habit.title,
+            sourceId,
+            sourceType: "HABIT",
 
-      if (habit.schedule.type === "interval") {
-        const hour = timeOfDay.split(":")[0];
+            scheduleType: "RECURRING",
+            timezone,
 
-        await createHabitNotification({
-          userId,
-          title: habit.title,
-          sourceType: "HABIT",
-          sourceId,
+            repeatRule: {
+              interval: "weekly",
+              daysOfWeek: habit.schedule.days,
+              timesOfDay: [timeOfDay],
+            },
 
-          scheduleType: "CRON",
-          cronExpression: `0 ${hour} */${habit.schedule.everyNDays} * *`,
-          timezone,
+            priority: habitData.notificationPriority,
+            type: habitData.notificationType,
+          });
+        }
 
-          priority: habitData.notificationPriority,
-          type: habitData.notificationType,
-        });
-      }
+        if (habit.schedule.type === "interval") {
+          const hour = timeOfDay.split(":")[0];
 
-      if (habit.schedule.type === "fixed") {
-        for (const date of habit.schedule.dates) {
           await createHabitNotification({
             userId,
             title: habit.title,
             sourceType: "HABIT",
             sourceId,
 
-            scheduleType: "ONCE",
-            scheduledAt: new Date(`${date}T${timeOfDay}:00`),
+            scheduleType: "CRON",
+            cronExpression: `0 ${hour} */${habit.schedule.everyNDays} * *`,
             timezone,
 
             priority: habitData.notificationPriority,
             type: habitData.notificationType,
           });
         }
+
+        if (habit.schedule.type === "fixed") {
+          for (const date of habit.schedule.dates) {
+            await createHabitNotification({
+              userId,
+              title: habit.title,
+              sourceType: "HABIT",
+              sourceId,
+
+              scheduleType: "ONCE",
+              scheduledAt: new Date(`${date}T${timeOfDay}:00`),
+              timezone,
+
+              priority: habitData.notificationPriority,
+              type: habitData.notificationType,
+            });
+          }
+        }
+        logger.info("Habit creation process completed", {
+          userId,
+          habitId: habit.id,
+        });
+      } catch (error) {
+        logger.error("Error creating habit notification", {
+          error,
+          errorMessage:
+            error instanceof Error ? error.message : "Unknown error",
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+        logger.error("Habit created but failed to create notification", {
+          userId,
+          habitId: habit.id,
+        });
+      } finally {
+        return habit;
       }
-      logger.info("Habit creation process completed", { 
-        userId,
-        habitId: habit.id,
-      });
-      return habit;
-    } catch (error) {      logger.error("Error creating habit notification", {
-        error,
-        errorMessage: error instanceof Error ? error.message : "Unknown error",
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      throw new Error("Failed to create habit notification");
     }
   }
-}
 
   async getActiveHabits(userId: string) {
     logger.debug("Get active habits request", { userId });
@@ -150,8 +156,15 @@ class HabitService {
     const deletedHabit = await habitRepository.delete(userId, habitId);
     logger.info("Habit deleted", { userId, deletedHabit });
 
-    const deletedNotifications = await deleteHabitNotifications(userId, habitId);
-    logger.info("Habit notifications deleted", { userId, habitId, deletedNotifications });
+    const deletedNotifications = await deleteHabitNotifications(
+      userId,
+      habitId,
+    );
+    logger.info("Habit notifications deleted", {
+      userId,
+      habitId,
+      deletedNotifications,
+    });
     return deletedHabit;
   }
 
