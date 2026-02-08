@@ -1,4 +1,4 @@
-import { firestore } from "./firebaseAdmin";
+import { firestore } from "../services/firebaseAdmin";
 
 export const gardenClient = {
   async addReward(userId: string, coins: number, water: number) {

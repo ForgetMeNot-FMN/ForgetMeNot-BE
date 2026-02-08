@@ -1,9 +1,10 @@
 import { taskRepository } from "./taskRepository";
 import { logger } from "../utils/logger";
 import { taskDTO } from "../models/taskDTO";
-import { gardenClient } from "./gardenClient";
+import { gardenClient } from "../clients/gardenClient";
 import { normalizeDateOnly, normalizeDateTime } from "../utils/dateParser";
 import dayjs from "dayjs";
+import { notificationClient } from "../clients/notificationClient";
 
 
 class TaskService {
@@ -58,8 +59,9 @@ class TaskService {
     }
   }
 
-  if (!body.startTime)
+  if (!body.startTime){
     throw new Error("startTime is required");
+  }
 
   const startTime = normalizeDateTime(body.startTime);
   const endTime = body.endTime ? normalizeDateTime(body.endTime) : null;
@@ -93,6 +95,56 @@ class TaskService {
     taskId: task.taskId,
   });
 
+  logger.info("Checking notification settings for new task", {
+    userId,
+    taskId: task.taskId,
+    notificationEnabled: body.notificationEnabled,
+    notificationTime: body.notificationTime,
+  });
+  if (!body.notificationEnabled) {
+    return task;
+  }
+
+  const notificationTime = body.notificationTime
+    ? normalizeDateTime(body.notificationTime)
+    : startTime;
+
+  if (!notificationTime) {
+    logger.warn("Notification time is missing, skipping notification", {
+      userId,
+      taskId: task.taskId,
+    });
+    return task;
+  }
+
+  if (notificationTime < new Date()) {
+    logger.warn("Notification time is in the past, skipping notification creation", {
+      userId,
+      taskId: task.taskId,
+      notificationTime: notificationTime.toISOString(),
+    });
+    return task;
+  }
+
+  try {
+    await notificationClient.createNotification({
+      userId,
+      title: task.title,
+      scheduledAt: notificationTime,
+    });
+
+    logger.info("Task notification created", {
+      userId,
+      notificationTime: notificationTime.toISOString(),
+    });
+  } catch (err) {
+    logger.error("Failed to create task notification", {
+      userId,
+      taskId: task.taskId,
+      err,
+      errorMessage: err instanceof Error ? err.message : "Unknown error",
+    });
+  }
   return task;
 }
 
@@ -102,8 +154,11 @@ class TaskService {
     logger.warn("Delete task request", { taskId });
 
     await taskRepository.delete(taskId);
-
     logger.info("Task deleted", { taskId });
+
+    await notificationClient.cancelTaskNotifications(taskId);
+    logger.info("Related task notifications cancelled", { taskId });
+
   }
 
   async updateTask(taskId: string, body: Partial<taskDTO>) {
@@ -175,7 +230,8 @@ class TaskService {
 
   logger.info("Task completed", { taskId, userId });
   await gardenClient.addReward(userId, 3, 1); // 3 Coin, 1 Water eklenmesi
-
+  await notificationClient.cancelTaskNotifications(taskId); // İlgili task bildirimlerini iptal et
+  logger.info("Related task notifications stopped", { taskId });
   return { message: "Task completed", coinsEarned: 3, waterEarned: 1 };
 }
 
