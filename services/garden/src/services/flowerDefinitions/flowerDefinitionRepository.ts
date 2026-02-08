@@ -21,7 +21,7 @@ export const flowerDefinitionRepository = {
   },
 
   async getAll() {
-    const snap = await this.collection().where("isActive", "==", true).get();
+    const snap = await this.collection().where("inStore", "==", true).get();
     return snap.docs.map(d => d.data());
   }
 };

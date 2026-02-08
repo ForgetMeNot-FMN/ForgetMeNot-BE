@@ -9,5 +9,5 @@ export interface FlowerDefinition {
     sproutToBloom: number;
   };
   lifespanDays: number;
-  isActive: boolean;
+  inStore: boolean;
 }

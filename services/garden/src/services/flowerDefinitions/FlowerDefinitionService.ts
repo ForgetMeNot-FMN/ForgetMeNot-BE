@@ -33,7 +33,7 @@ class FlowerDefinitionService {
     logger.info("Flower definition added", { key: data.key });
     return flowerDefinitionRepository.create({
       ...data,
-      isActive: true,
+      inStore: true,
     });
   }
 }
