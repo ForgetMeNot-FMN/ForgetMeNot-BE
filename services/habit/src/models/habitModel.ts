@@ -66,25 +66,9 @@ export interface habitDTO {
   targetValue?: number;
   locationTrigger?: LocationTrigger;
   status: "active" | "paused" | "archived";
+  notificationEnabled?: boolean;
+  notificationTime?: string;
+  timezone?: string;
+  notificationPriority?: "normal" | "high";
+  notificationType?: "REMINDER" | "MOTIVATION";
 }
-
-// Example Task model for future reference
-// export interface Task {
-//   id: string;
-//   userId: string;
-
-//   title: string;
-//   description?: string;
-
-//   dueDate?: Date; // deadline
-//   remindAt?: Date; // hatırlatma bildirimi zamanı
-
-//   locationTrigger?: LocationTrigger;
-
-//   status: "pending" | "completed" | "cancelled";
-
-//   completedAt?: Date;
-
-//   createdAt: Date;
-//   updatedAt: Date;
-// }
