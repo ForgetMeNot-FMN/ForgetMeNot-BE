@@ -9,6 +9,8 @@ export interface taskDTO {
   // kullanıcı verebilir ya da duration+start_time ile hesaplanır
   endTime?: string | Date | null;
   locationTrigger?: LocationTrigger;
+  notificationEnabled?: boolean;
+  notificationTime?: string | Date | null;
 }
 
 export type GeoEvent = "enter" | "exit";

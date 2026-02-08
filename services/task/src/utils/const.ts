@@ -13,4 +13,5 @@ export const envs = {
   FIREBASE_SERVICE_ACCOUNT: requireEnv("FIREBASE_SERVICE_ACCOUNT"),
   JWT_SECRET: requireEnv("JWT_SECRET"),
   PORT: process.env.PORT || "8080",
+  NOTIFICATION_SERVICE_URL: requireEnv("NOTIFICATION_SERVICE_URL"),
 };
