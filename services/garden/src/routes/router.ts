@@ -6,6 +6,7 @@ import {
   addWaterHandler,
   addCoinsHandler,
   deleteGardenHandler,
+  getGardenViewHandler,
 } from "../controllers/gardenController";
 
 import {
@@ -15,6 +16,10 @@ import {
   getBloomedFlowers,
   waterFlower,
   deleteFlower,
+  plantFlowerHandler,
+  killFlowerHandler,
+  getInventoryFlowers,
+  moveFlowerToInventory,
 } from "../controllers/flowerController";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import { addDefaultFlower, getDefaultFlowerDetails } from "../controllers/flowerDefinitonsController";
@@ -30,6 +35,8 @@ router.post("/:userId/add-water", authMiddleware, addWaterHandler);
 router.post("/:userId/add-coins", authMiddleware, addCoinsHandler);
 
 router.delete("/:userId", authMiddleware, deleteGardenHandler);
+
+router.get("/:userId/view", authMiddleware, getGardenViewHandler);
 
 /**
  * FLOWER ROUTES
@@ -54,5 +61,17 @@ router.get("/flowers/definitions/:type", authMiddleware, getDefaultFlowerDetails
 
 // Purchase flower
 router.post("/:userId/flowers/purchase", authMiddleware, purchaseFlowerHandler);
+
+// Plant flower
+router.post("/:userId/flowers/:flowerId/plant", authMiddleware, plantFlowerHandler);
+
+// Inventory'deki çiçekler
+router.get("/:userId/flowers/inventory", authMiddleware, getInventoryFlowers);
+
+// Bloom olan çiçeği inventory ye gönderme
+router.post("/:userId/flowers/:flowerId/move-to-inventory", authMiddleware, moveFlowerToInventory);
+
+// Kill Flower
+router.post("/:userId/flowers/:flowerId/kill", authMiddleware, killFlowerHandler);
 
 export default router;

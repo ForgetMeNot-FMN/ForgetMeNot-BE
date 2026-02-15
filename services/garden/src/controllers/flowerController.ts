@@ -74,3 +74,78 @@ export async function deleteFlower(req: Request, res: Response) {
     return res.status(400).json({ success: false, message: err.message });
   }
 }
+
+export async function plantFlowerHandler(req: Request, res: Response) {
+  try {
+    const { userId, flowerId } = req.params;
+
+    const result = await flowerService.plantFlower(userId, flowerId);
+
+    return res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (err: any) {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+}
+
+
+export async function getInventoryFlowers(req: Request, res: Response) {
+  try {
+    const { userId } = req.params;
+
+    const flowers = await flowerService.getInventoryFlowers(userId);
+
+    return res.json({
+      success: true,
+      data: flowers,
+    });
+  } catch (err: any) {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+}
+
+
+export async function moveFlowerToInventory(req: Request, res: Response) {
+  try {
+    const { userId, flowerId } = req.params;
+
+    const result = await flowerService.moveToInventory(userId, flowerId);
+
+    return res.json({
+      success: true,
+      data: result,
+    });
+  } catch (err: any) {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+}
+
+export async function killFlowerHandler(req: Request, res: Response) {
+  try {
+    const { userId, flowerId } = req.params;
+
+    await flowerService.killFlower(userId, flowerId);
+
+    return res.json({
+      success: true,
+      message: "Flower killed",
+    });
+  } catch (err: any) {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+}
+

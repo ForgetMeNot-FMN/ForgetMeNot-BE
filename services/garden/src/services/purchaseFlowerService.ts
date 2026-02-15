@@ -1,59 +1,95 @@
-import { gardenRepository } from "./gardenRepository";
-import { flowerRepository } from "./flowerRepository";
 import { flowerDefinitionRepository } from "./flowerDefinitions/flowerDefinitionRepository";
 import { GrowthStage } from "../utils/enums";
 import { logger } from "../utils/flowerLogger";
+import { firestore } from "./firebaseAdmin";
 
 class PurchaseFlowerService {
 
-  async purchaseFlower(userId: string, flowerKey: string, customName?: string) {
+  async purchaseFlower(
+    userId: string,
+    flowerKey: string,
+    customName?: string
+  ) {
 
-    const definition = await flowerDefinitionRepository.getByKey(flowerKey);
+    return await firestore.runTransaction(async (tx) => {
 
-    if (!definition)
-      throw new Error("Flower not found in store");
+      const now = new Date();
 
-    if (!definition.inStore)
-      throw new Error("Flower is not available in store");
+      const gardenRef = firestore.collection("gardens").doc(userId);
+      const gardenSnap = await tx.get(gardenRef);
 
-    const garden = await gardenRepository.getByUserId(userId);
+      if (!gardenSnap.exists)
+        throw new Error("Garden not found");
 
-    if (!garden)
-      throw new Error("Garden not found");
+      const garden = gardenSnap.data();
 
-    // Coin kontrolü
-    if (garden.coins < definition.price)
-      throw new Error("Not enough coins");
+      // Definition read
+      const definition =
+        await flowerDefinitionRepository.getByKey(flowerKey);
 
-    // Coin azaltma
-    const newCoins = garden.coins - definition.price;
+      if (!definition)
+        throw new Error("Flower not found");
 
-    await gardenRepository.update(userId, {
-      coins: newCoins,
-      totalFlowers: garden.totalFlowers + 1,
+      if (!definition.inStore)
+        throw new Error("Flower not in store");
+
+      if ((garden.coins ?? 0) < definition.price)
+        throw new Error("Not enough coins");
+
+      const newCoins = garden.coins - definition.price;
+
+      const flowerRef =
+        gardenRef.collection("flowers").doc();
+
+      const flower = {
+        flowerId: flowerRef.id,
+        flowerName: customName?.trim() || definition.displayName,
+        type: definition.key,
+        growthStage: GrowthStage.SEED,
+        isAlive: true,
+        waterCount: 0,
+        lastWateredAt: null,
+        plantedAt: null,
+        location: "INVENTORY",
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      // Update garden
+      tx.update(gardenRef, {
+
+        coins: newCoins,
+
+        totalFlowers:
+          (garden.totalFlowers ?? 0) + 1,
+
+        updatedAt: now,
+      });
+
+      // Create flower
+      tx.set(flowerRef, flower);
+
+      logger.info("Flower purchased", {
+
+        userId,
+
+        flowerId: flowerRef.id,
+
+        flowerKey,
+
+        price: definition.price,
+
+        coinsLeft: newCoins,
+      });
+
+      return {
+
+        flower,
+
+        coinsLeft: newCoins,
+      };
+
     });
-
-    const flower = await flowerRepository.create(userId, {
-      flowerName: customName || definition.displayName,
-      type: definition.key,
-      growthStage: GrowthStage.SEED,
-      isAlive: true,
-      waterCount: 0,
-      lastWateredAt: null,
-    });
-
-    logger.info("Flower purchased", {
-      userId,
-      flowerId: flower.flowerId,
-      flowerKey,
-      price: definition.price,
-      coinsLeft: newCoins,
-    });
-
-    return {
-      flower,
-      coinsLeft: newCoins,
-    };
   }
 }
 
