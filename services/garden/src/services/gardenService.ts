@@ -1,5 +1,7 @@
 import { gardenRepository } from "./gardenRepository";
+import { flowerRepository } from "./flowerRepository";
 import { logger } from "../utils/logger";
+import { GrowthStage } from "../utils/enums";
 import dayjs from "dayjs";
 
 class GardenService {
@@ -77,6 +79,33 @@ class GardenService {
   async deleteGarden(userId: string) {
     await gardenRepository.delete(userId);
   }
+
+  async getGardenView(userId: string) {
+
+    const garden = await gardenRepository.getByUserId(userId);
+    if (!garden) throw new Error("Garden not found");
+
+    const flowers = await flowerRepository.getAll(userId);
+
+    const activeFlower =
+      flowers.find(
+        f => f.isAlive && f.location === "GARDEN"
+      ) ?? null;
+
+    const inventoryFlowers =
+      flowers.filter(
+        f => f.isAlive && f.location === "INVENTORY"
+      );
+
+    return {
+      coins: garden.coins,
+      water: garden.water,
+      streak: garden.streak,
+      activeFlower,
+      inventoryFlowers,
+    };
+  }
+
 }
 
 export const gardenService = new GardenService();

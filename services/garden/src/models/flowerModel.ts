@@ -11,4 +11,7 @@ export interface Flower {
   lastWateredAt?: Date;
 
   createdAt: Date;
+  plantedAt?: Date | null;
+
+  location: "GARDEN" | "INVENTORY";
 }

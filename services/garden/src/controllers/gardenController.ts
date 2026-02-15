@@ -64,3 +64,16 @@ export async function deleteGardenHandler(req: Request, res: Response) {
     return res.status(400).json({ success: false, message: err.message });
   }
 }
+
+export async function getGardenViewHandler(req, res) {
+  try {
+    const { userId } = req.params;
+    const view = await gardenService.getGardenView(userId);
+    res.json({ success: true, data: view });
+  } catch (e: any) {
+    res.status(400).json({
+      success: false,
+      message: e.message,
+    });
+  }
+}
