@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { habitCompletionRepository } from "../repository/habitCompletionRepository";
 import { gardenRepository } from "../repository/gardenRepository";
 import dayjs from "dayjs";
+import { createHabitNotification, deleteHabitNotifications } from "../clients/notificationClient";
 
 class HabitService {
   async createHabit(userId: string, habitData: habitDTO): Promise<Habit> {
@@ -26,7 +27,99 @@ class HabitService {
     });
     console.log("Habit object to be created:", habit);
     await habitRepository.create(habit);
-    return habit;
+
+    logger.info("Habit created successfully, starting notification creation", {
+      userId,
+      habitId: habit.id,
+    });
+    if (habitData.notificationEnabled) {
+      try {
+        const timezone = habitData.timezone ?? "Europe/Istanbul";
+        const timeOfDay = habitData.notificationTime ?? "09:00";
+        const sourceId = habit.id;
+        logger.info("Creating notification for habit", {
+          userId,
+          habitId: habit.id,
+          timezone,
+          timeOfDay,
+          notificationPriority: habitData.notificationPriority,
+          notificationType: habitData.notificationType,
+        });
+        if (habit.schedule.type === "weekly") {
+          await createHabitNotification({
+            userId,
+            title: habit.title,
+            sourceId,
+            sourceType: "HABIT",
+
+            scheduleType: "RECURRING",
+            timezone,
+
+            repeatRule: {
+              interval: "weekly",
+              daysOfWeek: habit.schedule.days,
+              timesOfDay: [timeOfDay],
+            },
+
+            priority: habitData.notificationPriority,
+            type: habitData.notificationType,
+          });
+        }
+
+        if (habit.schedule.type === "interval") {
+          const hour = timeOfDay.split(":")[0];
+
+          await createHabitNotification({
+            userId,
+            title: habit.title,
+            sourceType: "HABIT",
+            sourceId,
+
+            scheduleType: "CRON",
+            cronExpression: `0 ${hour} */${habit.schedule.everyNDays} * *`,
+            timezone,
+
+            priority: habitData.notificationPriority,
+            type: habitData.notificationType,
+          });
+        }
+
+        if (habit.schedule.type === "fixed") {
+          for (const date of habit.schedule.dates) {
+            await createHabitNotification({
+              userId,
+              title: habit.title,
+              sourceType: "HABIT",
+              sourceId,
+
+              scheduleType: "ONCE",
+              scheduledAt: new Date(`${date}T${timeOfDay}:00`),
+              timezone,
+
+              priority: habitData.notificationPriority,
+              type: habitData.notificationType,
+            });
+          }
+        }
+        logger.info("Habit creation process completed", {
+          userId,
+          habitId: habit.id,
+        });
+      } catch (error) {
+        logger.error("Error creating habit notification", {
+          error,
+          errorMessage:
+            error instanceof Error ? error.message : "Unknown error",
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+        logger.error("Habit created but failed to create notification", {
+          userId,
+          habitId: habit.id,
+        });
+      } finally {
+        return habit;
+      }
+    }
   }
 
   async getActiveHabits(userId: string) {
@@ -61,8 +154,17 @@ class HabitService {
     logger.warn("Delete habit request", { userId });
 
     const deletedHabit = await habitRepository.delete(userId, habitId);
+    logger.info("Habit deleted", { userId, deletedHabit });
 
-    logger.info("Habit deleted", { userId });
+    const deletedNotifications = await deleteHabitNotifications(
+      userId,
+      habitId,
+    );
+    logger.info("Habit notifications deleted", {
+      userId,
+      habitId,
+      deletedNotifications,
+    });
     return deletedHabit;
   }
 
@@ -76,7 +178,7 @@ class HabitService {
     const todayCompletion = await habitCompletionRepository.getByHabitAndDate(
       habitId,
       userId,
-      today
+      today,
     );
 
     if (todayCompletion) {
@@ -108,7 +210,7 @@ class HabitService {
       await habitCompletionRepository.getByHabitAndDate(
         habitId,
         userId,
-        yesterday
+        yesterday,
       );
 
     const newStreak = yesterdayCompletion ? habit.currentStreak + 1 : 1;
@@ -146,10 +248,10 @@ class HabitService {
       habitId,
       userId,
       from,
-      to
+      to,
     );
     const completedDates = new Set(
-      completions.filter((c) => c.completed).map((c) => c.date)
+      completions.filter((c) => c.completed).map((c) => c.date),
     );
     const daily = [];
     let completedCount = 0;
@@ -177,7 +279,7 @@ class HabitService {
 
 function removeUndefined<T extends object>(obj: T): T {
   return Object.fromEntries(
-    Object.entries(obj).filter(([_, v]) => v !== undefined)
+    Object.entries(obj).filter(([_, v]) => v !== undefined),
   ) as T;
 }
 
