@@ -48,8 +48,8 @@ export const notificationClient = {
   async cancelTaskNotifications(taskId: string) {
     try {
       await axios.patch(
-        `${baseURL}/notifications/task/${taskId}`,
-        { enabled: false }
+        `${baseURL}/notifications/${taskId}`,
+        { enabled: false, deliveryStatus: "CANCELLED" },
       );
     } catch (error) {
       logger.error("Cancel task notifications failed", {

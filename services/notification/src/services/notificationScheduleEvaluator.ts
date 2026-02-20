@@ -49,7 +49,9 @@ function shouldSendOnce(
   // zamanı geçtiyse ve daha önce gönderilmediyse
   return (
     now.isAfter(scheduledTime) &&
-    notification.deliveryStatus !== "SENT"
+    notification.deliveryStatus !== "SENT" &&
+    notification.deliveryStatus !== "CANCELLED" &&
+    notification.enabled
   );
 }
 
