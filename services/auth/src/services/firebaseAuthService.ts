@@ -17,6 +17,13 @@ export const firebaseAuthService = {
     const userId = decoded.uid;
     const email = decoded.email!;
     const username = decoded.name || email.split("@")[0];
+    const authUser: AuthUser = {
+      userId,
+      email,
+      username,
+      authProvider: decoded.firebase.sign_in_provider,
+    };
+    const token = tokenService.sign(authUser);
 
     const userRef = firestore.collection(USERS_COLLECTION).doc(userId);
     logger.info("Firebase ID Token verified", { userId, email });
@@ -43,20 +50,21 @@ export const firebaseAuthService = {
       logger.info("New user created in Firestore", { userId, email });
       try {
         logger.info("Creating garden for new user", { userId });
-        const res = await axios.post(`${GARDEN_SERVICE_URL}/gardens/${userId}`);
+        const res = await axios.post(
+          `${GARDEN_SERVICE_URL}/gardens/${userId}`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
         logger.info("Garden created:", res.status);
       } catch (err: any) {
         logger.error("Error creating garden for new user", { userId, error: err.message } );
       }
     }
 
-    const authUser: AuthUser = {
-      userId,
-      email,
-      username,
-      authProvider: decoded.firebase.sign_in_provider,
-    };
-    const token = tokenService.sign(authUser);
     return {
       token,
       user: authUser,
