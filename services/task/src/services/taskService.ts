@@ -131,6 +131,7 @@ class TaskService {
       userId,
       title: task.title,
       scheduledAt: notificationTime,
+      taskId: task.taskId,
     });
 
     logger.info("Task notification created", {
@@ -156,7 +157,8 @@ class TaskService {
     await taskRepository.delete(taskId);
     logger.info("Task deleted", { taskId });
 
-    await notificationClient.cancelTaskNotifications(taskId);
+    const notificationId = await taskRepository.getNotificationIdByTaskId(taskId);
+    await notificationClient.cancelTaskNotifications(notificationId);
     logger.info("Related task notifications cancelled", { taskId });
 
   }
@@ -223,10 +225,10 @@ class TaskService {
     throw new Error("Task already completed");
 
   await taskRepository.update(taskId, {
-    isCompleted: true,
-    isActive: false,
+      isCompleted: true,
+      isActive: false,
     completedAt: new Date(),
-  });
+    });
 
   logger.info("Task completed", { taskId, userId });
   await gardenClient.addReward(userId, 3, 1); // 3 Coin, 1 Water eklenmesi
