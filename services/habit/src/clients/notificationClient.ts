@@ -32,7 +32,7 @@ export async function createHabitNotification(params: NotificationParams) {
     {
       title: "Habit Reminder",
       body: params.title,
-      sourceId: params.userId,
+      sourceId: params.sourceId,
       sourceType: "HABIT",
 
       type: params.type ?? "REMINDER",
@@ -43,7 +43,7 @@ export async function createHabitNotification(params: NotificationParams) {
       scheduledAt:   params.scheduleType === "ONCE" && params.scheduledAt instanceof Date
     ? params.scheduledAt.toISOString()
     : undefined,
-      timezone: params.timezone ?? "Europe/Istanbul",
+      timezone: params.timezone ?? "UTC",
 
       repeatRule: params.repeatRule,
       cronExpression: params.cronExpression,

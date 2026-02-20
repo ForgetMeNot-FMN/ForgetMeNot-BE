@@ -22,7 +22,7 @@ export const notificationClient = {
           enabled: true,
           scheduleType: "ONCE",
           scheduledAt: params.scheduledAt.toISOString(),
-          timezone: params.timezone ?? "Europe/Istanbul",
+          timezone: params.timezone ?? "UTC",
           priority: params.priority ?? "normal",
           type: params.type ?? "REMINDER",
           sourceType: "TASK",

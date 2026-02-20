@@ -34,7 +34,7 @@ class HabitService {
     });
     if (habitData.notificationEnabled) {
       try {
-        const timezone = habitData.timezone ?? "Europe/Istanbul";
+        const timezone = habitData.timezone ?? "UTC";
         const timeOfDay = habitData.notificationTime ?? "09:00";
         const sourceId = habit.id;
         logger.info("Creating notification for habit", {
