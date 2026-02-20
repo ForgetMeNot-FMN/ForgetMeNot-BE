@@ -3,6 +3,7 @@ import { Task } from "../models/taskModel";
 import dayjs from "dayjs";
 
 const TASKS_COLLECTION = "tasks";
+const NOTIFICATIONS_COLLECTION = "notifications";
 
 export const taskRepository = {
   async getTasksByUserId(userId: string): Promise<Task[]> {
@@ -102,5 +103,16 @@ async getTodayUncompletedDueTasks(userId: string): Promise<Task[]> {
   }));
 },
 
+async getNotificationIdByTaskId(taskId: string): Promise<string | null> {
+  const snapshot = await firestore
+    .collection(NOTIFICATIONS_COLLECTION)
+    .where("sourceId", "==", taskId)
+    .get();
 
+  if (snapshot.empty) {
+    return null;
+  }
+
+  return snapshot.docs[0].id;
+}
 };

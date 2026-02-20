@@ -11,6 +11,7 @@ export const notificationClient = {
     scheduledAt: Date;
     timezone?: string;
     priority?: "normal" | "high";
+    taskId: string;
     type?: "REMINDER" | "MOTIVATION";
   }) {
     try {
@@ -26,6 +27,7 @@ export const notificationClient = {
           priority: params.priority ?? "normal",
           type: params.type ?? "REMINDER",
           sourceType: "TASK",
+          sourceId: params.taskId,
         }
       );
 
