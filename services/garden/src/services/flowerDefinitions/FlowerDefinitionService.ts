@@ -1,5 +1,5 @@
 import { flowerDefinitionRepository } from "./flowerDefinitionRepository";
-import { clearCache, getCache, setCache } from "./flowerDefinitonCache";
+import { clearCache, getCache, setCache } from "./flowerDefinitionCache";
 import { logger } from "../../utils/flowerLogger";
 
 class FlowerDefinitionService {
