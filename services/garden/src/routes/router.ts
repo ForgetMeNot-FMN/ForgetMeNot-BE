@@ -25,6 +25,19 @@ import { authMiddleware } from "../middlewares/authMiddleware";
 import { addDefaultFlower, getDefaultFlowerDetails } from "../controllers/flowerDefinitonsController";
 import { purchaseFlowerHandler } from "../controllers/purchaseFlowerController";
 
+import { 
+  getCharacterDefinition, 
+  getAllCharacterDefinitions,
+  addCharacterDefinition,
+} from "../controllers/characterDefinitionController";
+
+import { purchaseCharacterItemHandler } from "../controllers/purchaseCharacterController";
+import {
+  getCharacterInventory,
+  equipCharacterItem,
+  unequipCharacterItem,
+  getCurrentCharacter,
+} from "../controllers/characterController";
 const router = Router();
 
 router.post("/:userId", authMiddleware, createGardenHandler);
@@ -73,5 +86,34 @@ router.post("/:userId/flowers/:flowerId/move-to-inventory", authMiddleware, move
 
 // Kill Flower
 router.post("/:userId/flowers/:flowerId/kill", authMiddleware, killFlowerHandler);
+
+
+/**
+ * CHARACTER DEFINITIONS
+ */
+
+// Tek item (key ile)
+router.get("/characters/definitions/:key", authMiddleware, getCharacterDefinition);
+
+// Store’daki tüm character item’ları
+router.get("/characters/definitions", authMiddleware, getAllCharacterDefinitions);
+
+// Default item ekleme (DEV ONLY)
+// router.post("/characters/definitions", addCharacterDefinition);
+
+// Purchase character item
+router.post("/:userId/characters/purchase", authMiddleware, purchaseCharacterItemHandler);
+
+// Character inventory
+router.get("/:userId/characters/inventory", authMiddleware, getCharacterInventory);
+
+// Equip
+router.post("/:userId/characters/:itemId/equip", authMiddleware, equipCharacterItem);
+
+// Unequip
+router.post("/:userId/characters/:itemId/unequip", authMiddleware, unequipCharacterItem);
+
+// Current character
+router.get("/:userId/characters/current", authMiddleware, getCurrentCharacter);
 
 export default router;
