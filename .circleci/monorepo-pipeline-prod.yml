@@ -31,7 +31,7 @@ parameters:
 jobs:
   forgetmenot-user-service-prod-deploy:
     docker:
-      - image: gcr.io/google.com/cloudsdktool/google-cloud-cli:530.0.0-slim
+      - image: google/cloud-sdk:528.0.0
     environment:
       PROJECT_ID: << pipeline.parameters.project-id >>
       SERVICE_ACCOUNT: << pipeline.parameters.service-account >>
@@ -105,7 +105,7 @@ jobs:
 
   forgetmenot-habit-service-prod-deploy:
     docker:
-      - image: gcr.io/google.com/cloudsdktool/google-cloud-cli:530.0.0-slim
+      - image: google/cloud-sdk:528.0.0
     environment:
       PROJECT_ID: << pipeline.parameters.project-id >>
       SERVICE_ACCOUNT: << pipeline.parameters.service-account >>
@@ -142,7 +142,7 @@ jobs:
 
   forgetmenot-task-service-prod-deploy:
     docker:
-      - image: gcr.io/google.com/cloudsdktool/google-cloud-cli:530.0.0-slim
+      - image: google/cloud-sdk:528.0.0
     environment:
       PROJECT_ID: << pipeline.parameters.project-id >>
       SERVICE_ACCOUNT: << pipeline.parameters.service-account >>
@@ -179,7 +179,7 @@ jobs:
 
   forgetmenot-auth-service-prod-deploy:
     docker:
-      - image: gcr.io/google.com/cloudsdktool/google-cloud-cli:530.0.0-slim
+      - image: google/cloud-sdk:528.0.0
     environment:
       PROJECT_ID: << pipeline.parameters.project-id >>
       SERVICE_ACCOUNT: << pipeline.parameters.service-account >>
