@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 dotenv.config({ path: "/temp/.env" });
 import express from "express";
 import gardenRouter from "./src/routes/router";
+import cronRouter from "./src/routes/cronRouter";
 import cors from "cors";
 import { globalRateLimit } from "./src/middlewares/rateLimitMiddleware";
 import { envs } from "./src/utils/const";
@@ -13,6 +14,7 @@ app.use(cors());
 app.use(globalRateLimit);
 app.use(express.json());
 
+app.use("/cron", cronRouter);
 app.use("/gardens", gardenRouter);
 
 const PORT = envs.PORT || 8080;

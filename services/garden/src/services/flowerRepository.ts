@@ -1,6 +1,15 @@
 import { firestore } from "./firebaseAdmin";
 import { Flower } from "../models/flowerModel";
 
+export type ActiveFlowerRecord = {
+  flowerId: string;
+  type: string;
+  isAlive: boolean;
+  lastWateredAt?: Date;
+  plantedAt?: Date | null;
+  createdAt?: Date;
+};
+
 export const flowerRepository = {
   collection(userId: string) {
     return firestore
@@ -30,6 +39,34 @@ export const flowerRepository = {
       ...(doc.data() as Flower),
       flowerId: doc.id, 
     }));
+  },
+
+  async getActiveFlowerByUserId(userId: string): Promise<ActiveFlowerRecord | null> {
+    const snap = await this.collection(userId)
+      .where("location", "==", "GARDEN")
+      .get();
+
+    if (snap.empty) return null;
+
+    const doc = snap.docs[0];
+    const data = doc.data() as any;
+
+    // Helper to convert Firestore Timestamp to JS Date
+    const toDate = (value: any): Date | undefined => {
+      if (!value) return undefined;
+      if (value instanceof Date) return value;
+      if (typeof value?.toDate === "function") return value.toDate();
+      return undefined;
+    };
+
+    return {
+      flowerId: doc.id,
+      type: data.type,
+      isAlive: data.isAlive !== false,
+      lastWateredAt: toDate(data.lastWateredAt),
+      plantedAt: toDate(data.plantedAt) ?? null,
+      createdAt: toDate(data.createdAt),
+    };
   },
 
   // Create new flower

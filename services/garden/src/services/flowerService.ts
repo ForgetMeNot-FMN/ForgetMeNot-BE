@@ -4,6 +4,7 @@ import { GrowthStage } from "../utils/enums";
 import dayjs from "dayjs";
 import { flowerDefinitionRepository } from "./flowerDefinitions/flowerDefinitionRepository";
 import { firestore } from "./firebaseAdmin";
+import { cancelNotificationBySourceId } from "./notificationClient";
 
 class FlowerService {
 
@@ -91,7 +92,7 @@ class FlowerService {
 
     const COOLDOWN_HOURS = 12; // 12 saatte 1 sulama max
 
-    return await firestore.runTransaction(async (tx) => {
+    const transactionResult = await firestore.runTransaction(async (tx) => {
 
       const now = new Date();
 
@@ -182,6 +183,26 @@ class FlowerService {
         }
       };
     });
+
+    try {
+      await cancelNotificationBySourceId({
+        userId,
+        sourceId: `GARDEN_WATER_${flowerId}`,
+      });
+
+      await cancelNotificationBySourceId({
+        userId,
+        sourceId: `GARDEN_DYING_${flowerId}`,
+      });
+    } catch (error) {
+      logger.warn("Failed to cancel garden notifications after watering", {
+        userId,
+        flowerId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+
+    return transactionResult;
   }
 
   //  Kill Flower 
