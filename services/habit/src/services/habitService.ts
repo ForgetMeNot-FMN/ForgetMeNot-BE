@@ -3,9 +3,9 @@ import { logger } from "../utils/logger";
 import { Habit, habitDTO } from "../models/habitModel";
 import { v4 as uuidv4 } from "uuid";
 import { habitCompletionRepository } from "../repository/habitCompletionRepository";
-import { gardenRepository } from "../repository/gardenRepository";
 import dayjs from "dayjs";
 import { createHabitNotification, deleteHabitNotifications } from "../clients/notificationClient";
+import { envs } from "../utils/const";
 
 class HabitService {
   async createHabit(userId: string, habitData: habitDTO): Promise<Habit> {
@@ -169,66 +169,14 @@ class HabitService {
   }
 
   async completeHabit(userId: string, habitId: string) {
-    const today = dayjs().format("YYYY-MM-DD");
-    const yesterday = dayjs().subtract(1, "day").format("YYYY-MM-DD");
-
-    const habit = await habitRepository.findById(habitId, userId);
-    if (!habit) throw new Error("Habit not found");
-
-    const todayCompletion = await habitCompletionRepository.getByHabitAndDate(
-      habitId,
+    const rewardCoins = envs.HABIT_REWARD_COINS;
+    const rewardWater = envs.HABIT_REWARD_WATER;
+    const completionData = await habitRepository.completeHabitWithReward(
       userId,
-      today,
+      habitId,
+      rewardCoins,
+      rewardWater,
     );
-
-    if (todayCompletion) {
-      logger.info("Habit already completed today", {
-        userId,
-        habitId,
-        today,
-      });
-
-      return {
-        habitId,
-        currentStreak: habit.currentStreak,
-        rewarded: { coins: 0, water: 0 },
-        alreadyCompleted: true,
-      };
-    }
-
-    await habitCompletionRepository.create({
-      habitId,
-      userId,
-      date: today,
-      completed: true,
-      rewardGranted: true,
-      coins: 5,
-      water: 1,
-    });
-
-    const yesterdayCompletion =
-      await habitCompletionRepository.getByHabitAndDate(
-        habitId,
-        userId,
-        yesterday,
-      );
-
-    const newStreak = yesterdayCompletion ? habit.currentStreak + 1 : 1;
-
-    await habitRepository.update(habitId, {
-      currentStreak: newStreak,
-      longestStreak: Math.max(habit.longestStreak, newStreak),
-      updatedAt: new Date(),
-    });
-
-    await gardenRepository.rewardUser(userId);
-
-    const completionData = {
-      habitId,
-      currentStreak: newStreak,
-      rewarded: { coins: 5, water: 1 },
-      alreadyCompleted: false,
-    };
 
     logger.info("User rewarded for habit completion", {
       userId,
