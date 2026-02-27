@@ -14,4 +14,6 @@ export const envs = {
   JWT_SECRET: requireEnv("JWT_SECRET"),
   PORT: process.env.PORT || "8080",
   NOTIFICATION_SERVICE_URL: requireEnv("NOTIFICATION_SERVICE_URL"),
+  TASK_REWARD_COINS: Number(process.env.TASK_REWARD_COINS || 5),
+  TASK_REWARD_WATER: Number(process.env.TASK_REWARD_WATER || 1),
 };

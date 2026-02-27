@@ -11,7 +11,9 @@ export interface Task {
   locationTrigger?: LocationTrigger;
   isActive: boolean;
   isCompleted: boolean;
-  completedAt?: Date | null; 
+  completedAt?: Date | null;
+  rewardGranted?: boolean;
+  rewardGrantedAt?: Date | null;
   createdAt: Date;
   updatedAt?: Date;
 }

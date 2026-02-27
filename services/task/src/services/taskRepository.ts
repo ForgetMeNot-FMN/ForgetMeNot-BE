@@ -59,6 +59,60 @@ export const taskRepository = {
       });
   },
 
+  async completeTaskWithReward(
+    taskId: string,
+    userId: string,
+    rewardCoins: number,
+    rewardWater: number,
+  ) {
+    return firestore.runTransaction(async (tx) => {
+      const taskRef = firestore.collection(TASKS_COLLECTION).doc(taskId);
+      const gardenRef = firestore.collection("gardens").doc(userId);
+
+      const taskSnap = await tx.get(taskRef);
+      if (!taskSnap.exists) throw new Error("Task not found");
+
+      const task = taskSnap.data() as Task;
+      if (task.userId !== userId) throw new Error("Forbidden");
+
+      let coinsEarned = 0;
+      let waterEarned = 0;
+
+      if (!task.rewardGranted) {
+        const gardenSnap = await tx.get(gardenRef);
+        if (!gardenSnap.exists) throw new Error("Garden not found");
+
+        const garden = gardenSnap.data()!;
+        tx.update(gardenRef, {
+          coins: (garden.coins || 0) + rewardCoins,
+          water: (garden.water || 0) + rewardWater,
+          updated_at: new Date(),
+        });
+
+        coinsEarned = rewardCoins;
+        waterEarned = rewardWater;
+      }
+
+      tx.update(taskRef, {
+        isCompleted: true,
+        isActive: false,
+        completedAt: new Date(),
+        rewardGranted: true,
+        rewardGrantedAt: task.rewardGrantedAt || new Date(),
+        updatedAt: new Date(),
+      });
+
+      return {
+        taskId,
+        alreadyCompleted: Boolean(task.isCompleted),
+        rewarded: {
+          coins: coinsEarned,
+          water: waterEarned,
+        },
+      };
+    });
+  },
+
   async delete(taskId: string) {
     await firestore.collection(TASKS_COLLECTION)
       .doc(taskId)
