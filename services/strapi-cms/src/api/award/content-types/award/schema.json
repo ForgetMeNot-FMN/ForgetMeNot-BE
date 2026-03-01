@@ -1,0 +1,43 @@
+{
+  "kind": "collectionType",
+  "collectionName": "awards",
+  "info": {
+    "singularName": "award",
+    "pluralName": "awards",
+    "displayName": "Awards"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "Title": {
+      "type": "string",
+      "required": true
+    },
+    "key": {
+      "type": "uid",
+      "required": true
+    },
+    "badgeImage": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    },
+    "awardType": {
+      "type": "enumeration",
+      "enum": [
+        "streak",
+        "flower"
+      ]
+    },
+    "value": {
+      "type": "integer"
+    }
+  }
+}
