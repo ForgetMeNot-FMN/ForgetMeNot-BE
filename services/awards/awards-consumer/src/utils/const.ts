@@ -10,9 +10,7 @@ function requireEnv(key: string): string {
 }
 
 export const envs = {
-  FIREBASE_SERVICE_ACCOUNT: requireEnv("FIREBASE_SERVICE_ACCOUNT"),
-  JWT_SECRET: requireEnv("JWT_SECRET"),
-  PORT: process.env.PORT || "8080",
   GCP_PROJECT_ID: requireEnv("GCP_PROJECT_ID"),
-  AWARDS_EVENTS_TOPIC: requireEnv("AWARDS_EVENTS_TOPIC"),
+  AWARDS_CREATE_GET_URL: requireEnv("AWARDS_CREATE_GET_URL"),
+  INTERNAL_SERVICE_TOKEN: requireEnv("INTERNAL_SERVICE_TOKEN"),
 };

@@ -1,18 +1,18 @@
 {
-  "name": "garden",
-  "version": "1.0.2",
+  "name": "awards-consumer",
+  "version": "1.0.1",
   "description": "",
   "main": "dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "dev": "nodemon --exec ts-node ./index.ts"
+    "start": "functions-framework --target=consumer --signature-type=cloudevent --source=dist/index.js",
+    "dev": "nodemon --watch dist --exec \"npm run start\""
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@types/express": "^5.0.5",
     "@types/node": "^24.10.4",
     "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
@@ -20,14 +20,7 @@
   },
   "dependencies": {
     "@google-cloud/pubsub": "^4.8.0",
-    "cors": "^2.8.5",
-    "dayjs": "^1.11.19",
-    "dotenv": "^17.2.3",
-    "express": "^5.1.0",
-    "express-rate-limit": "^8.2.1",
-    "firebase-admin": "^13.6.0",
-    "uuid": "^13.0.0",
-    "winston": "^3.18.3",
-    "zod": "^4.1.12"
+    "@google-cloud/functions-framework": "^3.4.6",
+    "dotenv": "^17.2.3"
   }
 }
