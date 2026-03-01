@@ -22,7 +22,11 @@ import {
   moveFlowerToInventory,
 } from "../controllers/flowerController";
 import { authMiddleware } from "../middlewares/authMiddleware";
-import { addDefaultFlower, getDefaultFlowerDetails } from "../controllers/flowerDefinitonsController";
+import {
+  addDefaultFlower,
+  getAllFlowerDefinitions,
+  getDefaultFlowerDetails,
+} from "../controllers/flowerDefinitonsController";
 import { purchaseFlowerHandler } from "../controllers/purchaseFlowerController";
 
 import { 
@@ -67,8 +71,10 @@ router.delete("/:userId/flowers/:flowerId", authMiddleware, deleteFlower);
 
 // Flower Definitions
 router.get("/flowers/definitions/:type", authMiddleware, getDefaultFlowerDetails);
+// Store’daki tüm flower item’ları
+router.get("/flowers/definitions", authMiddleware, getAllFlowerDefinitions);
 
-// router.post("/flowers/definitions", addDefaultFlower);
+//router.post("/flowers/definitions", addDefaultFlower);
 // unprotected endpoint only should be used for adding default flower definitons to db
 // developers can add flowers by hitting this endpoint by running service locally
 
