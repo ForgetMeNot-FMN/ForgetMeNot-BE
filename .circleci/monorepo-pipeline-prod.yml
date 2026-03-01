@@ -12,7 +12,7 @@ parameters:
     default: "app"
   awards-topic:
     type: string
-    default: "awards-topic"
+    default: "awards-consumer"
   consumer-entry-point:
     type: string
     default: "consumer"
