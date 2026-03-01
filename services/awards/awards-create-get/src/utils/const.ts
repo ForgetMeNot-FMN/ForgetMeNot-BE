@@ -1,6 +1,5 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "/temp/.env" });
-dotenv.config();
 
 function requireEnv(key: string): string {
   const value = process.env[key];
