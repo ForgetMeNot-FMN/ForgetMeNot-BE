@@ -7,8 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
     "start": "functions-framework --target=consumer --signature-type=cloudevent --source=dist/index.js",
-    "dev": "nodemon --watch dist --exec \"npm run start\"",
-    "simulate": "ts-node ./scripts/simulateConsumerEvent.ts"
+    "dev": "nodemon --watch dist --exec \"npm run start\""
   },
   "keywords": [],
   "author": "",
@@ -20,6 +19,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@google-cloud/pubsub": "^4.8.0",
     "@google-cloud/functions-framework": "^3.4.6",
     "dotenv": "^17.2.3"
   }

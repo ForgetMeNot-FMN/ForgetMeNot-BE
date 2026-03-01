@@ -173,10 +173,17 @@ class AwardsService {
     }
 
     const garden = gardenDoc.data() as any;
+    const bloomedFlowersSnap = await firestore
+      .collection("gardens")
+      .doc(userId)
+      .collection("flowers")
+      .where("isAlive", "==", true)
+      .where("growthStage", "==", "bloom")
+      .get();
 
     return {
       streak: resolveEffectiveStreak(garden?.streak, garden?.lastWateredDate),
-      flower: typeof garden?.totalFlowers === "number" ? garden.totalFlowers : 0,
+      flower: bloomedFlowersSnap.size,
     };
   }
 

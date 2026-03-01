@@ -18,4 +18,6 @@ workflows:
             services/auth/.* run-auth-service-workflow true
             services/task/.* run-task-service-workflow true
             services/notification/.* run-notification-service-workflow true
+            services/awards/awards-consumer/.* run-awards-consumer-service-workflow true
+            services/awards/awards-create-get/.* run-awards-create-get-service-workflow true
           config-path: .circleci/monorepo-pipeline-prod.yml
