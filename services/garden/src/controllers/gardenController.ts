@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { gardenService } from "../services/gardenService";
+import { triggerAwardCheck } from "../services/awardsClient";
 
 export async function createGardenHandler(req: Request, res: Response) {
   try {
@@ -45,13 +46,25 @@ export async function addCoinsHandler(req: Request, res: Response) {
   }
 }
 
-export async function waterGardenHandler(req, res) {
+export async function waterGardenHandler(req: Request, res: Response) {
   try {
     const { userId } = req.params;
     const result = await gardenService.waterGarden(userId);
-    res.json(result);
+    const messageId = await triggerAwardCheck({
+      userId,
+      eventType: "garden.watered",
+    });
+
+    res.json({
+      ...result,
+      awardEventPublished: Boolean(messageId),
+      awardEventMessageId: messageId,
+    });
   } catch (e) {
-    res.status(400).json({ message: e.message });
+    res.status(400).json({
+      success: false,
+      message: e instanceof Error ? e.message : "Unknown error",
+    });
   }
 }
 

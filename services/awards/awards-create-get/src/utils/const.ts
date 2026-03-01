@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "/temp/.env" });
+dotenv.config();
 
 function requireEnv(key: string): string {
   const value = process.env[key];
@@ -13,6 +14,7 @@ export const envs = {
   FIREBASE_SERVICE_ACCOUNT: requireEnv("FIREBASE_SERVICE_ACCOUNT"),
   JWT_SECRET: requireEnv("JWT_SECRET"),
   PORT: process.env.PORT || "8080",
-  GCP_PROJECT_ID: requireEnv("GCP_PROJECT_ID"),
-  AWARDS_EVENTS_TOPIC: requireEnv("AWARDS_EVENTS_TOPIC"),
+  STRAPI_BASE_URL: process.env.STRAPI_BASE_URL || "",
+  STRAPI_API_TOKEN: process.env.STRAPI_API_TOKEN || "",
+  INTERNAL_SERVICE_TOKEN: requireEnv("INTERNAL_SERVICE_TOKEN"),
 };
