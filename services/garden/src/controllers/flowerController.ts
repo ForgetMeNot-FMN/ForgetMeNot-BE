@@ -149,3 +149,79 @@ export async function killFlowerHandler(req: Request, res: Response) {
   }
 }
 
+export async function getDisplayFlowers(req: Request, res: Response) {
+
+  try {
+
+    const { userId } = req.params;
+
+    const flowers =
+      await flowerService.getDisplayFlowers(userId);
+
+    return res.json({
+      success: true,
+      data: flowers
+    });
+
+  } catch (err:any) {
+
+    return res.status(400).json({
+      success:false,
+      message: err.message
+    });
+  }
+}
+
+export async function setFlowerDisplay(req: Request, res: Response) {
+
+  try {
+
+    const { userId, flowerId } = req.params;
+    const { slot } = req.body;
+
+    const result =
+      await flowerService.setFlowerDisplay(
+        userId,
+        flowerId,
+        slot
+      );
+
+    return res.json({
+      success:true,
+      data: result
+    });
+
+  } catch (err:any) {
+
+    return res.status(400).json({
+      success:false,
+      message: err.message
+    });
+  }
+}
+
+export async function removeFlowerDisplay(req: Request, res: Response) {
+
+  try {
+
+    const { userId, flowerId } = req.params;
+
+    const result =
+      await flowerService.removeFlowerFromDisplay(
+        userId,
+        flowerId
+      );
+
+    return res.json({
+      success:true,
+      data: result
+    });
+
+  } catch (err:any) {
+
+    return res.status(400).json({
+      success:false,
+      message: err.message
+    });
+  }
+}
