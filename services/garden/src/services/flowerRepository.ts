@@ -98,4 +98,16 @@ export const flowerRepository = {
   async delete(userId: string, flowerId: string) {
     await this.collection(userId).doc(flowerId).delete();
   },
+
+  async getDisplayFlowers(userId: string): Promise<Flower[]> {
+    const snap = await this.collection(userId)
+      .where("displaySlot", "!=", null)
+      .get();
+
+    return snap.docs.map(doc => ({
+      ...(doc.data() as Flower),
+      flowerId: doc.id
+    }));
+  }
+
 };

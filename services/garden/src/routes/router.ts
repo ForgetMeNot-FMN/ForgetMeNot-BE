@@ -20,6 +20,10 @@ import {
   killFlowerHandler,
   getInventoryFlowers,
   moveFlowerToInventory,
+  getDisplayFlowers,
+  setFlowerDisplay,
+  removeFlowerDisplay,
+
 } from "../controllers/flowerController";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import {
@@ -59,6 +63,9 @@ router.get("/:userId/view", authMiddleware, getGardenViewHandler);
  * FLOWER ROUTES
  */
 
+// Get Displayed flowers
+router.get("/:userId/flowers/display", authMiddleware, getDisplayFlowers);
+
 router.post("/:userId/flowers", authMiddleware, createFlower);
 
 router.get("/:userId/flowers", authMiddleware, getAllFlowers);
@@ -92,6 +99,12 @@ router.post("/:userId/flowers/:flowerId/move-to-inventory", authMiddleware, move
 
 // Kill Flower
 router.post("/:userId/flowers/:flowerId/kill", authMiddleware, killFlowerHandler);
+
+// Set display slot
+router.post("/:userId/flowers/:flowerId/display", authMiddleware, setFlowerDisplay);
+
+// Remove from display
+router.post("/:userId/flowers/:flowerId/remove-display", authMiddleware, removeFlowerDisplay);
 
 
 /**

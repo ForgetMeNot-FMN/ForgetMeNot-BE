@@ -14,4 +14,6 @@ export interface Flower {
   plantedAt?: Date | null;
 
   location: "GARDEN" | "INVENTORY";
+
+  displaySlot?: number | null; // 1, 2, 3; for pot number
 }

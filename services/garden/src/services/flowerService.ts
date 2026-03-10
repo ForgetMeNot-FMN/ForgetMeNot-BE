@@ -404,5 +404,73 @@ class FlowerService {
     );
   }
 
+  async getDisplayFlowers(userId: string) {
+    const flowers = await flowerRepository.getAll(userId);
+
+    return flowers.filter(f =>
+      f.isAlive &&
+      f.location === "INVENTORY" &&
+      f.displaySlot != null
+    );
+  }
+
+  async setFlowerDisplay(
+    userId: string,
+    flowerId: string,
+    slot: number
+  ) {
+
+    if (![1,2,3].includes(slot))
+      throw new Error("Invalid display slot");
+
+    const flower = await flowerRepository.getById(userId, flowerId);
+
+    if (!flower)
+      throw new Error("Flower not found");
+
+    if (flower.location !== "INVENTORY")
+      throw new Error("Flower must be in inventory");
+
+    if (flower.growthStage !== GrowthStage.BLOOM)
+      throw new Error("Only bloomed flowers can be displayed");
+
+    const flowers = await flowerRepository.getAll(userId);
+
+    const slotTaken = flowers.find(f => f.displaySlot === slot);
+
+    if (slotTaken)
+      throw new Error("Display slot already used");
+
+    await flowerRepository.update(userId, flowerId, {
+      displaySlot: slot
+    });
+
+    return {
+      flowerId,
+      displaySlot: slot
+    };
+  }
+
+  async removeFlowerFromDisplay(
+    userId: string,
+    flowerId: string
+  ) {
+
+    const flower = await flowerRepository.getById(userId, flowerId);
+
+    if (!flower)
+      throw new Error("Flower not found");
+
+    if (flower.displaySlot == null)
+      throw new Error("Flower is not displayed");
+
+    await flowerRepository.update(userId, flowerId, {
+      displaySlot: null
+    });
+
+    return { success: true };
+  }
+  
+
 }
 export const flowerService = new FlowerService();
