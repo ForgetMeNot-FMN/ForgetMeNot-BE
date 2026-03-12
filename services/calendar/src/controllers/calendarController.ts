@@ -1,38 +1,76 @@
 import { Response } from "express";
-import { getGoogleEvents } from "../services/calendarService";
+import {
+  detectConflictsByDateRange,
+  getUserEventsByDateRange,
+  validateDateRange,
+} from "../services/calendarService";
 import { logger } from "../utils/logger";
 import { AuthRequest } from "../middlewares/authMiddleware";
 
-export const getEvents = async (req: AuthRequest, res: Response) => {
+export async function getEvents(req: AuthRequest, res: Response) {
   try {
-
     const accessToken = req.headers["x-google-access-token"] as string;
 
     if (!accessToken) {
       return res.status(401).json({
         success: false,
-        message: "Google access token missing"
+        message: "Google access token missing",
       });
     }
 
     const userId = req.params.userId;
 
-    logger.info("Fetching calendar events", { userId });
+    const from =
+      typeof req.query.from === "string"
+        ? req.query.from
+        : new Date().toISOString();
+    const to =
+      typeof req.query.to === "string"
+        ? req.query.to
+        : new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString();
 
-    const events = await getGoogleEvents(accessToken, userId);
+    logger.info("Fetching and syncing calendar events", { userId, from, to });
+
+    const events = await getUserEventsByDateRange(accessToken, userId, from, to);
 
     res.json({
       success: true,
-      data: events
+      data: events,
     });
-
   } catch (error) {
-
     logger.error("Failed to fetch calendar events", error);
 
     res.status(500).json({
       success: false,
-      message: "Failed to fetch events"
+      message: error instanceof Error ? error.message : "Failed to fetch events",
     });
   }
-};
+}
+
+export async function getConflicts(req: AuthRequest, res: Response) {
+  try {
+    const userId = req.params.userId;
+
+    const from = req.query.from as string;
+    const to = req.query.to as string;
+    await validateDateRange(from, to);
+
+    const conflicts = await detectConflictsByDateRange(userId, from, to);
+
+    return res.json({
+      success: true,
+      data: {
+        range: { from, to },
+        conflicts,
+      },
+    });
+  } catch (error) {
+    logger.error("Failed to fetch conflicts", error);
+
+    return res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to fetch conflicts",
+    });
+  }
+}
