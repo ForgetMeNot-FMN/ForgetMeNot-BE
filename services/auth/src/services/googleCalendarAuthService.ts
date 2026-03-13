@@ -58,7 +58,7 @@ async function publishGoogleEventsInitialSync(userId: string, accessToken: strin
   let nextSyncToken: string | undefined;
 
   const now = new Date();
-  const threeMonthsLater = new Date(now.getFullYear(), now.getMonth() + 3, now.getDate());
+  const thirtyOneDaysLater = new Date(now.getTime() + 31 * 24 * 60 * 60 * 1000);
 
   do {
     const res = await calendar.events.list({
@@ -67,7 +67,7 @@ async function publishGoogleEventsInitialSync(userId: string, accessToken: strin
       pageToken,
       maxResults: 250,
       timeMin: now.toISOString(),
-      timeMax: threeMonthsLater.toISOString(),
+      timeMax: thirtyOneDaysLater.toISOString(),
     });
 
     const items = res.data.items ?? [];
