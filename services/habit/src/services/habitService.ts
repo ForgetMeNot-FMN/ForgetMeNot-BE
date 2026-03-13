@@ -287,7 +287,7 @@ async function publishHabitCalendarEvents(userId: string, habit: Habit): Promise
       startTime,
       endTime,
       isAllDay: false,
-      checkConflict: true,
+      checkConflict: false,
     });
   }
 
