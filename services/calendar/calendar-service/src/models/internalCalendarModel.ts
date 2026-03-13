@@ -1,9 +1,10 @@
 export interface InternalCalendarEvent {
   id: string;
   userId: string;
-  provider: "google";
-  externalEventId: string;
+  provider: "google" | "fmn";
+  externalEventId?: string;
   taskId?: string;
+  habitId?: string;
   title?: string;
   description?: string;
   startTime: string;

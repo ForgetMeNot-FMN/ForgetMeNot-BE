@@ -13,6 +13,9 @@ parameters:
   awards-topic:
     type: string
     default: "awards-consumer"
+  calendar-topic:
+    type: string
+    default: "calendar-events"
   consumer-entry-point:
     type: string
     default: "consumer"
@@ -41,6 +44,9 @@ parameters:
     type: boolean
     default: false
   run-calendar-service-workflow:
+    type: boolean
+    default: false
+  run-calendar-event-consumer-service-workflow:
     type: boolean
     default: false
 jobs:
@@ -362,14 +368,14 @@ jobs:
             apt-get update
             apt-get install bash npm -y
 
-            cd services/calendar
+            cd services/calendar/calendar-service
             npm ci
             cd ../../
 
             gcloud run deploy forgetmenot-calendar-service-prod \
               --cpu=1 \
               --memory=512Mi \
-              --source ./services/calendar \
+              --source ./services/calendar/calendar-service \
               --service-account=$SERVICE_ACCOUNT \
               --set-secrets=/temp/.env=projects/305796297986/secrets/forgetmenot-calendar-prod-env:latest \
               --region=europe-west1 \
@@ -378,6 +384,45 @@ jobs:
               --max-instances=20 \
               --quiet \
               --ingress all
+  forgetmenot-calendar-event-consumer-service-prod-deploy:
+    docker:
+      - image: google/cloud-sdk:528.0.0
+    environment:
+      PROJECT_ID: << pipeline.parameters.project-id >>
+      SERVICE_ACCOUNT: << pipeline.parameters.service-account >>
+      TRIGGER_TOPIC: << pipeline.parameters.calendar-topic >>
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: false
+      - run:
+          name: Build & Deploy Calendar Event Consumer Service (Cloud Functions Gen2)
+          command: |
+            echo "$GCP_SA_KEY" > /tmp/gcp-key.json
+            gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
+            gcloud config set project $PROJECT_ID
+
+            apt-get update
+            apt-get install bash npm -y
+
+            cd services/calendar/calendar-event-consumer
+            npm ci && npm run build
+            cd ../../../
+
+            gcloud functions deploy forgetmenot-calendar-event-consumer-service-prod \
+              --gen2 \
+              --runtime=nodejs22 \
+              --entry-point=consumer \
+              --trigger-topic=$TRIGGER_TOPIC \
+              --source ./services/calendar/calendar-event-consumer \
+              --region=europe-west1 \
+              --service-account=$SERVICE_ACCOUNT \
+              --set-secrets=/temp/.env=projects/305796297986/secrets/forgetmenot-calendar-event-consumer-prod-env:latest \
+              --memory=512Mi \
+              --timeout=60s \
+              --max-instances=20 \
+              --min-instances=0 \
+              --quiet
 workflows:
   run-garden-service-workflow:
     when:
@@ -468,3 +513,13 @@ workflows:
           filters:
             branches:
               only: main
+
+  run-calendar-event-consumer-service-workflow:
+    when:
+      or:
+        - << pipeline.parameters.run-calendar-event-consumer-service-workflow >>
+    jobs:
+      - forgetmenot-calendar-event-consumer-service-prod-deploy:
+          filters:
+            branches:
+              only: main              
