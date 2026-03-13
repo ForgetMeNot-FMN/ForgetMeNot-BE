@@ -1,7 +1,7 @@
 import { firestore } from "../services/firebaseAdmin";
 import { CalendarAccount } from "../models/calendarAccountModel";
 
-const CALENDAR_ACCOUNTS_COLLECTION = "calendarAccounts";
+const CALENDAR_ACCOUNTS_COLLECTION = "calendar_accounts";
 
 export const calendarAccountRepository = {
   async upsertCalendarAccount(
