@@ -370,7 +370,7 @@ jobs:
 
             cd services/calendar/calendar-service
             npm ci
-            cd ../../
+            cd ../../../
 
             gcloud run deploy forgetmenot-calendar-service-prod \
               --cpu=1 \
