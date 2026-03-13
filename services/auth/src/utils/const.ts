@@ -13,5 +13,7 @@ export const envs = {
   FIREBASE_SERVICE_ACCOUNT: requireEnv("FIREBASE_SERVICE_ACCOUNT"),
   JWT_SECRET: requireEnv("JWT_SECRET"),
   GARDEN_SERVICE_URL: requireEnv("GARDEN_SERVICE_URL"),
+  GOOGLE_CLIENT_ID: requireEnv("GOOGLE_CLIENT_ID"),
+  GOOGLE_CLIENT_SECRET: requireEnv("GOOGLE_CLIENT_SECRET"),
   PORT: process.env.PORT || "8080",
 };
