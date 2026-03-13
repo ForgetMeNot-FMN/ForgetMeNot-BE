@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { habitCompletionRepository } from "../repository/habitCompletionRepository";
 import dayjs from "dayjs";
 import { createHabitNotification, deleteHabitNotifications } from "../clients/notificationClient";
+import { publishCalendarEvent } from "../clients/calendarEventPublisher";
 import { envs } from "../utils/const";
 
 class HabitService {
@@ -120,6 +121,19 @@ class HabitService {
         return habit;
       }
     }
+
+    // CalendarEvent Pub/Sub mesajları
+    try {
+      await publishHabitCalendarEvents(userId, habit);
+    } catch (error) {
+      logger.warn("Failed to publish calendar events for habit", {
+        userId,
+        habitId: habit.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+
+    return habit;
   }
 
   async getActiveHabits(userId: string) {
@@ -229,6 +243,59 @@ function removeUndefined<T extends object>(obj: T): T {
   return Object.fromEntries(
     Object.entries(obj).filter(([_, v]) => v !== undefined),
   ) as T;
+}
+
+async function publishHabitCalendarEvents(userId: string, habit: Habit): Promise<void> {
+  if (!habit.schedule) {
+    logger.warn("Habit has no schedule, skipping calendar event publish", { habitId: habit.id });
+    return;
+  }
+
+  const DEFAULT_DURATION_MINUTES = 60;
+  const DAYS_AHEAD = 7;
+  const today = dayjs().startOf("day");
+  const dates: string[] = [];
+
+  if (habit.schedule.type === "weekly") {
+    for (let i = 0; i < DAYS_AHEAD; i++) {
+      const day = today.add(i, "day");
+      if (habit.schedule.days.includes(day.day())) {
+        dates.push(day.format("YYYY-MM-DD"));
+      }
+    }
+  } else if (habit.schedule.type === "interval") {
+    const start = dayjs(habit.schedule.startDate).startOf("day");
+    for (let i = 0; i < DAYS_AHEAD; i++) {
+      const candidate = start.add(i * habit.schedule.everyNDays, "day");
+      if (candidate.isBefore(today.add(DAYS_AHEAD, "day"))) {
+        dates.push(candidate.format("YYYY-MM-DD"));
+      }
+    }
+  } else if (habit.schedule.type === "fixed") {
+    dates.push(...habit.schedule.dates);
+  }
+
+  for (const date of dates) {
+    const startTime = dayjs(`${date}T09:00:00`).toISOString();
+    const endTime = dayjs(`${date}T09:00:00`).add(DEFAULT_DURATION_MINUTES, "minute").toISOString();
+    await publishCalendarEvent({
+      userId,
+      provider: "fmn",
+      sourceType: "habit",
+      habitId: habit.id,
+      title: habit.title,
+      startTime,
+      endTime,
+      isAllDay: false,
+      checkConflict: false,
+    });
+  }
+
+  logger.info("Habit calendar events published", {
+    userId,
+    habitId: habit.id,
+    count: dates.length,
+  });
 }
 
 export const habitService = new HabitService();

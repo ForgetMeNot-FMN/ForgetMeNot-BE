@@ -4,6 +4,7 @@ import { taskDTO } from "../models/taskDTO";
 import { normalizeDateOnly, normalizeDateTime } from "../utils/dateParser";
 import dayjs from "dayjs";
 import { notificationClient } from "../clients/notificationClient";
+import { publishCalendarEvent } from "../clients/calendarEventPublisher";
 import { envs } from "../utils/const";
 
 class TaskService {
@@ -95,6 +96,25 @@ class TaskService {
       notificationTime: body.notificationTime,
     });
     if (!body.notificationEnabled) {
+      try {
+        await publishCalendarEvent({
+          userId,
+          provider: "fmn",
+          sourceType: "task",
+          taskId: task.taskId,
+          title: task.title,
+          startTime: (task.startTime ?? new Date()).toISOString(),
+          endTime: (task.endTime ?? task.startTime ?? new Date()).toISOString(),
+          isAllDay: false,
+          checkConflict: true,
+        });
+      } catch (err) {
+        logger.warn("Failed to publish calendar event for task", {
+          userId,
+          taskId: task.taskId,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
       return task;
     }
 
@@ -142,6 +162,27 @@ class TaskService {
         errorMessage: err instanceof Error ? err.message : "Unknown error",
       });
     }
+
+    try {
+      await publishCalendarEvent({
+        userId,
+        provider: "fmn",
+        sourceType: "task",
+        taskId: task.taskId,
+        title: task.title,
+        startTime: (task.startTime ?? new Date()).toISOString(),
+        endTime: (task.endTime ?? task.startTime ?? new Date()).toISOString(),
+        isAllDay: false,
+        checkConflict: true,
+      });
+    } catch (err) {
+      logger.warn("Failed to publish calendar event for task", {
+        userId,
+        taskId: task.taskId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+
     return task;
   }
 

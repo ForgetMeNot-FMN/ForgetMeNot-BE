@@ -15,4 +15,6 @@ export const envs = {
   PORT: process.env.PORT || "8080",
   HABIT_REWARD_COINS: Number(process.env.HABIT_REWARD_COINS || 5),
   HABIT_REWARD_WATER: Number(process.env.HABIT_REWARD_WATER || 1),
+  GCP_PROJECT_ID: requireEnv("GCP_PROJECT_ID"),
+  CALENDAR_EVENTS_TOPIC: requireEnv("CALENDAR_EVENTS_TOPIC"),
 };
