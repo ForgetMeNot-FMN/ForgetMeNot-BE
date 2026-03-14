@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { google } from "googleapis";
-import { v4 as uuidv4 } from "uuid";
+import { v4 as uuidv4, v5 as uuidv5 } from "uuid";
 import { ConflictItem, ConflictRecord } from "../models/conflictModel";
 import { InternalCalendarEvent } from "../models/internalCalendarModel";
 import { calendarRepository } from "../repositories/calendarRepository";
@@ -9,6 +9,7 @@ import { normalizeGoogleEvent } from "../utils/eventNormalizer";
 import { logger } from "../utils/logger";
 
 const MAX_RANGE_DAYS = 31;
+const CONFLICT_NAMESPACE = "8a7c2d90-6dfd-4ce2-b7d2-2f6c1aa52f6f";
 export async function validateDateRange(from: string, to: string) {
   const fromDate = dayjs(from);
   const toDate = dayjs(to);
@@ -126,6 +127,7 @@ export async function detectConflictsByDateRange(
       (!event.status || event.status !== "cancelled"),
   );
   const conflicts: ConflictRecord[] = [];
+  const detectedAt = new Date().toISOString();
 
   for (const event of googleEvents) {
     for (const fmnEvent of fmnEvents) {
@@ -159,20 +161,26 @@ export async function detectConflictsByDateRange(
               ),
             ),
         );
+        const itemKeys = items.map((item) =>
+          [item.sourceType, item.sourceId, item.provider || "none"].join(":"),
+        );
+        const startsAt = items.map((item) => item.startTime).sort()[0];
+        const endsAt = items.map((item) => item.endTime).sort().slice(-1)[0];
 
         conflicts.push({
-          conflictId: uuidv4(),
+          conflictId: uuidv5(
+            [userId, "google_vs_fmn", ...itemKeys, startsAt, endsAt].join("|"),
+            CONFLICT_NAMESPACE,
+          ),
           userId,
           type: "google_vs_fmn",
-          itemKeys: items.map((item) =>
-            [item.sourceType, item.sourceId, item.provider || "none"].join(":"),
-          ),
-          detectedAt: new Date().toISOString(),
-          startsAt: items.map((item) => item.startTime).sort()[0],
-          endsAt: items.map((item) => item.endTime).sort().slice(-1)[0],
+          itemKeys,
+          detectedAt,
+          startsAt,
+          endsAt,
           items,
           status: "open",
-          updatedAt: new Date().toISOString(),
+          updatedAt: detectedAt,
         });
       }
     }
@@ -212,20 +220,26 @@ export async function detectConflictsByDateRange(
               ),
             ),
         );
+        const itemKeys = items.map((item) =>
+          [item.sourceType, item.sourceId, item.provider || "none"].join(":"),
+        );
+        const startsAt = items.map((item) => item.startTime).sort()[0];
+        const endsAt = items.map((item) => item.endTime).sort().slice(-1)[0];
 
         conflicts.push({
-          conflictId: uuidv4(),
+          conflictId: uuidv5(
+            [userId, "fmn_vs_fmn", ...itemKeys, startsAt, endsAt].join("|"),
+            CONFLICT_NAMESPACE,
+          ),
           userId,
           type: "fmn_vs_fmn",
-          itemKeys: items.map((item) =>
-            [item.sourceType, item.sourceId, item.provider || "none"].join(":"),
-          ),
-          detectedAt: new Date().toISOString(),
-          startsAt: items.map((item) => item.startTime).sort()[0],
-          endsAt: items.map((item) => item.endTime).sort().slice(-1)[0],
+          itemKeys,
+          detectedAt,
+          startsAt,
+          endsAt,
           items,
           status: "open",
-          updatedAt: new Date().toISOString(),
+          updatedAt: detectedAt,
         });
       }
     }
