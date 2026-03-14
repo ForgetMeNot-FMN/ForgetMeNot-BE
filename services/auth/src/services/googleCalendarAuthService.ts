@@ -87,6 +87,7 @@ async function publishGoogleEventsInitialSync(userId: string, accessToken: strin
         startTime,
         endTime,
         externalEventId: event.id ?? undefined,
+        checkConflict: true,
       };
 
       await topic.publishMessage({ json: message });
