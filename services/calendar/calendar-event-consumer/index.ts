@@ -57,8 +57,8 @@ export async function consumer(topicMessage: { data?: PubSubData }) {
     title: payload.title ?? null,
     startTime: payload.startTime,
     endTime: payload.endTime,
-    isAllDay: payload.isAllDay,
-    checkConflict: payload.checkConflict,
+    isAllDay: payload.isAllDay ?? false,
+    checkConflict: payload.checkConflict ?? false,
     lastSyncedAt: new Date().toISOString(),
   };
 
