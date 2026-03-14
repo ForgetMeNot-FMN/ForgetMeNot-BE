@@ -1,5 +1,5 @@
 export interface ConflictItem {
-  sourceType: "calendar_event" | "task";
+  sourceType: "calendar_event" | "task" | "habit";
   sourceId: string;
   provider?: "google" | "fmn";
   title?: string;
@@ -17,6 +17,6 @@ export interface ConflictRecord {
   startsAt: string;
   endsAt: string;
   items: ConflictItem[];
-  status: "open";
+  status: "open" | "resolved_continue" | "resolved_cancel";
   updatedAt: string;
 }
