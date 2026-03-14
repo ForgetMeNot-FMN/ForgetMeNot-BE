@@ -4,6 +4,14 @@ import { CalendarAccount } from "../models/calendarAccountModel";
 const CALENDAR_ACCOUNTS_COLLECTION = "calendar_accounts";
 
 export const calendarAccountRepository = {
+  async updateNextSyncToken(userId: string, nextSyncToken: string): Promise<void> {
+    const docId = `google_${userId}`;
+    await firestore.collection(CALENDAR_ACCOUNTS_COLLECTION).doc(docId).update({
+      nextSyncToken,
+      updatedAt: new Date(),
+    });
+  },
+
   async upsertCalendarAccount(
     userId: string,
     data: Omit<CalendarAccount, "userId" | "createdAt" | "updatedAt" | "nextSyncToken">,
