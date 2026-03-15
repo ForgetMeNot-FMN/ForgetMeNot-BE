@@ -1,4 +1,5 @@
 import { CloudTasksClient } from "@google-cloud/tasks";
+import { logger } from "../utils/logger";
 
 const client = new CloudTasksClient();
 
@@ -13,6 +14,11 @@ export const cloudTasksClient = {
     notificationId: string,
     scheduleTime?: Date
   ) {
+
+    logger.info("Enqueueing notification dispatch", {
+      notificationId: notificationId,
+      scheduleTime: scheduleTime
+    });
     const parent = client.queuePath(PROJECT_ID, LOCATION, QUEUE);
 
     const task: any = {
@@ -39,6 +45,11 @@ export const cloudTasksClient = {
     }
 
     const [response] = await client.createTask({ parent, task });
+
+    logger.info("Cloud task created", {
+      notificationId,
+      taskName: response.name
+    });
 
     return response.name;
   },

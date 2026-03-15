@@ -213,3 +213,80 @@ export async function dispatchScheduledNotificationsHandler(
     dispatched: dispatchedCount,
   });
 }
+
+export async function getTaskReminderTimesHandler(
+  req: Request,
+  res: Response
+) {
+  try {
+    const { sourceId } = req.params;
+
+    const reminders =
+      await notificationService.getTaskReminderTimes(sourceId);
+
+    return res.json({
+      success: true,
+      data: reminders,
+    });
+  } catch (err: any) {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+}
+
+export async function updateTaskReminderTimesHandler(
+  req: Request,
+  res: Response
+) {
+  try {
+    const { sourceId } = req.params;
+    const { reminderTimes } = req.body;
+
+    const result =
+      await notificationService.updateTaskReminderTimes(
+        sourceId,
+        reminderTimes
+      );
+
+    return res.json({
+      success: true,
+      data: result,
+    });
+  } catch (err: any) {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+}
+
+export async function notificationClickedHandler(
+  req: Request,
+  res: Response
+) {
+  try {
+    const { notificationId } = req.body;
+
+    if (!notificationId) {
+      return res.status(400).json({
+        success: false,
+        message: "notificationId is required",
+      });
+    }
+
+    await notificationService.markNotificationClicked(notificationId);
+
+    return res.json({
+      success: true,
+      message: "Notification click recorded",
+    });
+
+  } catch (err: any) {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+}
