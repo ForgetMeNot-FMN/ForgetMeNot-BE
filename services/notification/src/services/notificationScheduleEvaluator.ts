@@ -3,12 +3,19 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone"
 import { CronExpressionParser } from "cron-parser";
-
+import { logger } from "../utils/logger";
 
 export function shouldSendNow(notification: AppNotification): boolean {
   dayjs.extend(utc);
   dayjs.extend(timezone);
-  const now = dayjs();
+  const now = dayjs().tz(notification.timezone);
+
+  logger.debug("Checking notification timing", {
+    notificationId: notification.notificationId,
+    now: now.toISOString(),
+    scheduledAt: notification.scheduledAt,
+    timezone: notification.timezone
+  });
 
   // Aynı notification dakikada 1'den fazla gitmesin diye
   if (notification.lastAttemptAt) {
@@ -42,9 +49,7 @@ function shouldSendOnce(
 ): boolean {
   if (!notification.scheduledAt) return false;
 
-  const scheduledTime = dayjs(notification.scheduledAt).tz(
-    notification.timezone
-  );
+  const scheduledTime = dayjs.utc(notification.scheduledAt).tz(notification.timezone);
 
   // zamanı geçtiyse ve daha önce gönderilmediyse
   return (

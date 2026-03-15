@@ -6,7 +6,7 @@ import { DeliveryStatus } from "../models/notificationModel";
 
 class NotificationDispatcher {
   async dispatch(notificationId: string): Promise<void> {
-    logger.info("Dispatcher service called...")
+    logger.info("Starting notification dispatch", { notificationId});
     const notification =
       await notificationRepository.getNotificationById(notificationId);
 
@@ -14,10 +14,7 @@ class NotificationDispatcher {
     if (!notification.enabled) return;
     if (notification.isDeleted) return;
 
-    if (
-      notification.deliveryStatus === "SENT" ||
-      notification.deliveryStatus === "PROCESSING"
-    ) {
+    if (notification.deliveryStatus !== "SCHEDULED") {
       logger.debug("Notification already processed", {
         notificationId,
         status: notification.deliveryStatus,
@@ -35,12 +32,22 @@ class NotificationDispatcher {
       return;
     }
 
+    if (notification.deliveryStatus !== "SCHEDULED") {
+      logger.warn("Notification already handled", {
+        notificationId,
+        status: notification.deliveryStatus
+      });
+      return;
+    }
 
     await notificationRepository.markAsProcessing(notificationId);
 
     const tokens =
       await userClient.getUserFcmTokens(notification.userId);
-    logger.info(notificationId, tokens);
+    logger.info("User tokens fetched", {
+      notificationId,
+      tokenCount: tokens.length
+    });
     if (!tokens.length) {
       logger.warn("User has no FCM tokens", {
         userId: notification.userId,
@@ -98,9 +105,6 @@ class NotificationDispatcher {
       });
     }
 
-    /**
-     * ✅ Success / Failure
-     */
     if (response && response.successCount > 0) {
       await notificationRepository.markAsSent(notificationId);
 
@@ -112,8 +116,9 @@ class NotificationDispatcher {
     } else {
       await notificationRepository.markAsFailed(notificationId);
 
-      logger.error("Notification send failed", {
+      logger.error("Notification failed", {
         notificationId,
+        responses: response.responses
       });
     }
   }

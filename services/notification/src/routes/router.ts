@@ -11,13 +11,19 @@ import {
   getActiveNotificationsHandler,
   getPendingScheduledNotificationsHandler,
   dispatchNotificationHandler,
-  dispatchScheduledNotificationsHandler
+  dispatchScheduledNotificationsHandler,
+  getTaskReminderTimesHandler,
+  updateTaskReminderTimesHandler,
+  notificationClickedHandler
 } from "../controllers/notificationController";
 
 const router = Router();
 
 // INTERNAL (Front end kullanmayacak!)- Cloud Tasks için 
 router.post("/internal/notifications/dispatch", dispatchNotificationHandler);
+
+// wasClicked = true
+router.post("/click", notificationClickedHandler);
 
 // Get notifications of a user
 // Get all notifications of a user = /notifications/user/{userId}
@@ -55,5 +61,11 @@ router.post(
   "/dispatch/scheduled",
   dispatchScheduledNotificationsHandler
 );
+
+// Task id'ye göre reminder times getirme
+router.get("/task/:sourceId/reminders", getTaskReminderTimesHandler);
+
+// Task id'ye göre reminder times update'i
+router.patch("/task/:sourceId/reminders", updateTaskReminderTimesHandler);
 
 export default router;

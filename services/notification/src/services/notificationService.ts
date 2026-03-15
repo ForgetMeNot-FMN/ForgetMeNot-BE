@@ -81,7 +81,13 @@ class NotificationService {
     // Create
   async createNotification( userId: string, body: notificationDto ): Promise<AppNotification> {
 
-    logger.info("Create notification request", { userId });
+    logger.info("Creating notification", {
+      userId,
+      scheduleType: body.scheduleType,
+      scheduledAt: body.scheduledAt,
+      sourceType: body.sourceType,
+      sourceId: body.sourceId
+    });
 
     // Body validation
      this.validateCreateBody(body);
@@ -120,7 +126,12 @@ class NotificationService {
 
         // ONCE = belirli zamanda dispatch
         else if (notification.scheduleType === "ONCE" && notification.scheduledAt) {
-          await cloudTasksClient.enqueueNotificationDispatch(notification.notificationId, new Date(notification.scheduledAt));
+          const scheduleDate = dayjs(notification.scheduledAt).toDate();
+
+          await cloudTasksClient.enqueueNotificationDispatch(
+            notification.notificationId,
+            scheduleDate
+          );        
         }
 
     return notification;
@@ -228,7 +239,53 @@ class NotificationService {
     }
   }
 
+  async getTaskReminderTimes(sourceId: string) {
+    const notifications =
+      await notificationRepository.getNotificationsBySourceId(sourceId);
 
+    const reminderTimes = notifications
+      .filter(n => n.scheduleType === "ONCE")
+      .map(n => ({
+        notificationId: n.notificationId,
+        scheduledAt: n.scheduledAt,
+      }));
+
+    return reminderTimes;
+  }
+
+  async updateTaskReminderTimes(
+    sourceId: string,
+    reminderTimes: string[]
+  ) {
+    const notifications =
+      await notificationRepository.getNotificationsBySourceId(sourceId);
+
+    for (let i = 0; i < Math.min(notifications.length, reminderTimes.length); i++) {
+      await notificationRepository.update(
+        notifications[i].notificationId,
+        {
+          scheduledAt: reminderTimes[i],
+        }
+      );
+    }
+    return { updated: notifications.length };
+  }
+
+  async markNotificationClicked(notificationId: string) {
+
+    const notification = await notificationRepository.getNotificationById(notificationId);
+
+    if (!notification) {
+      throw new Error("Notification not found");
+    }
+
+    await notificationRepository.logNotificationClick(
+      notification.notificationId,
+      notification.userId,
+      notification.sourceType,
+      notification.sourceId ?? ""
+    );
+  }
 
 }
 

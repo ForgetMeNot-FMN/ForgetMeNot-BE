@@ -156,6 +156,7 @@ export const notificationRepository = {
     const snapshot = await firestore
       .collection(NOTIFICATION_COLLECTION)
       .where("deliveryStatus", "==", "SCHEDULED")
+      .where("enabled", "==", true)
       .where("isDeleted", "==", false)
       .get();
 
@@ -210,9 +211,40 @@ async markAsProcessing(notificationId: string) {
     .doc(notificationId)
     .update({
       deliveryStatus: "PROCESSING",
-      sentAt: new Date().toISOString(),
       lastAttemptAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+    });
+},
+
+async getNotificationsBySourceId(sourceId: string): Promise<AppNotification[]> {
+  const snapshot = await firestore
+    .collection(NOTIFICATION_COLLECTION)
+    .where("sourceId", "==", sourceId)
+    .where("isDeleted", "==", false)
+    .get();
+
+  return snapshot.docs.map(doc => ({
+    ...(doc.data() as AppNotification),
+    notificationId: doc.id,
+  }));
+},
+
+async logNotificationClick(
+  notificationId: string,
+  userId: string,
+  sourceType: "HABIT" | "TASK" | "FLOWER" | "SYSTEM",
+  sourceId: string
+) {
+  await firestore
+    .collection("notification_logs")
+    .doc(notificationId)
+    .set({
+      notification_id: notificationId,
+      user_id: userId,
+      source_type: sourceType,
+      source_id: sourceId,
+      was_clicked: true,
+      clicked_at: new Date().toISOString(),
     });
 }
 
