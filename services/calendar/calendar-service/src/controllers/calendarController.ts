@@ -2,6 +2,7 @@ import { Response } from "express";
 import {
   detectConflictsByDateRange,
   getUserEventsByDateRange,
+  resolveConflict,
   validateDateRange,
 } from "../services/calendarService";
 import { logger } from "../utils/logger";
@@ -43,6 +44,45 @@ export async function getEvents(req: AuthRequest, res: Response) {
     res.status(500).json({
       success: false,
       message: error instanceof Error ? error.message : "Failed to fetch events",
+    });
+  }
+}
+
+export async function resolveConflictHandler(req: AuthRequest, res: Response) {
+  try {
+    const userId = req.params.userId;
+    const { conflictId, action } = req.body as {
+      conflictId?: string;
+      action?: "continue" | "cancel";
+    };
+
+    if (!conflictId || !action) {
+      return res.status(400).json({
+        success: false,
+        message: "conflictId and action are required",
+      });
+    }
+
+    if (action !== "continue" && action !== "cancel") {
+      return res.status(400).json({
+        success: false,
+        message: "action must be continue or cancel",
+      });
+    }
+
+    const result = await resolveConflict(userId, conflictId, action);
+
+    return res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    logger.error("Failed to resolve conflict", error);
+
+    return res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to resolve conflict",
     });
   }
 }

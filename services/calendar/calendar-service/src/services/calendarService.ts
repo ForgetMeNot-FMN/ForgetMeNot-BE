@@ -1,14 +1,15 @@
 import dayjs from "dayjs";
 import { google } from "googleapis";
-import { v4 as uuidv4 } from "uuid";
+import { v4 as uuidv4, v5 as uuidv5 } from "uuid";
 import { ConflictItem, ConflictRecord } from "../models/conflictModel";
 import { InternalCalendarEvent } from "../models/internalCalendarModel";
 import { calendarRepository } from "../repositories/calendarRepository";
-import { taskRepository } from "../repositories/taskRepository";
+import { sourceRepository } from "../repositories/sourceRepository";
 import { normalizeGoogleEvent } from "../utils/eventNormalizer";
 import { logger } from "../utils/logger";
 
 const MAX_RANGE_DAYS = 31;
+const CONFLICT_NAMESPACE = "8a7c2d90-6dfd-4ce2-b7d2-2f6c1aa52f6f";
 export async function validateDateRange(from: string, to: string) {
   const fromDate = dayjs(from);
   const toDate = dayjs(to);
@@ -107,21 +108,32 @@ export async function detectConflictsByDateRange(
 ) {
   await validateDateRange(from, to);
 
-  const [events, tasks] = await Promise.all([
-    calendarRepository.getCalendarEventsByDateRange(userId, from, to),
-    taskRepository.getTasksByDateRange(userId, from, to),
-  ]);
+  const events = await calendarRepository.getCalendarEventsByDateRange(
+    userId,
+    from,
+    to,
+  );
 
-  const filteredEvents = events.filter(
-    (event) => event.checkConflict && event.status !== "cancelled",
+  const googleEvents = events.filter(
+    (event) =>
+      event.provider === "google" &&
+      event.checkConflict &&
+      event.status !== "cancelled",
+  );
+  const fmnEvents = events.filter(
+    (event) =>
+      event.provider === "fmn" &&
+      event.checkConflict &&
+      (!event.status || event.status !== "cancelled"),
   );
   const conflicts: ConflictRecord[] = [];
+  const detectedAt = new Date().toISOString();
 
-  for (const event of filteredEvents) {
-    for (const task of tasks) {
+  for (const event of googleEvents) {
+    for (const fmnEvent of fmnEvents) {
       if (
-        event.startTime < task.endTime &&
-        task.startTime < event.endTime
+        event.startTime < fmnEvent.endTime &&
+        fmnEvent.startTime < event.endTime
       ) {
         const googleItem: ConflictItem = {
           sourceType: "calendar_event",
@@ -132,15 +144,15 @@ export async function detectConflictsByDateRange(
           endTime: event.endTime,
           checkConflict: event.checkConflict,
         };
-        const taskItem: ConflictItem = {
-          sourceType: "task",
-          sourceId: task.taskId,
+        const fmnItem: ConflictItem = {
+          sourceType: fmnEvent.taskId ? "task" : "habit",
+          sourceId: fmnEvent.taskId ?? fmnEvent.habitId ?? fmnEvent.id,
           provider: "fmn",
-          title: task.title,
-          startTime: task.startTime,
-          endTime: task.endTime,
+          title: fmnEvent.title,
+          startTime: fmnEvent.startTime,
+          endTime: fmnEvent.endTime,
         };
-        const items = [googleItem, taskItem].sort((left, right) =>
+        const items = [googleItem, fmnItem].sort((left, right) =>
           [left.sourceType, left.sourceId, left.provider || "none"]
             .join(":")
             .localeCompare(
@@ -149,45 +161,51 @@ export async function detectConflictsByDateRange(
               ),
             ),
         );
+        const itemKeys = items.map((item) =>
+          [item.sourceType, item.sourceId, item.provider || "none"].join(":"),
+        );
+        const startsAt = items.map((item) => item.startTime).sort()[0];
+        const endsAt = items.map((item) => item.endTime).sort().slice(-1)[0];
 
         conflicts.push({
-          conflictId: uuidv4(),
+          conflictId: uuidv5(
+            [userId, "google_vs_fmn", ...itemKeys, startsAt, endsAt].join("|"),
+            CONFLICT_NAMESPACE,
+          ),
           userId,
           type: "google_vs_fmn",
-          itemKeys: items.map((item) =>
-            [item.sourceType, item.sourceId, item.provider || "none"].join(":"),
-          ),
-          detectedAt: new Date().toISOString(),
-          startsAt: items.map((item) => item.startTime).sort()[0],
-          endsAt: items.map((item) => item.endTime).sort().slice(-1)[0],
+          itemKeys,
+          detectedAt,
+          startsAt,
+          endsAt,
           items,
           status: "open",
-          updatedAt: new Date().toISOString(),
+          updatedAt: detectedAt,
         });
       }
     }
   }
 
-  for (let index = 0; index < tasks.length; index += 1) {
-    for (let innerIndex = index + 1; innerIndex < tasks.length; innerIndex += 1) {
-      const left = tasks[index];
-      const right = tasks[innerIndex];
+  for (let index = 0; index < fmnEvents.length; index += 1) {
+    for (let innerIndex = index + 1; innerIndex < fmnEvents.length; innerIndex += 1) {
+      const left = fmnEvents[index];
+      const right = fmnEvents[innerIndex];
 
       if (
         left.startTime < right.endTime &&
         right.startTime < left.endTime
       ) {
         const leftItem: ConflictItem = {
-          sourceType: "task",
-          sourceId: left.taskId,
+          sourceType: left.taskId ? "task" : "habit",
+          sourceId: left.taskId ?? left.habitId ?? left.id,
           provider: "fmn",
           title: left.title,
           startTime: left.startTime,
           endTime: left.endTime,
         };
         const rightItem: ConflictItem = {
-          sourceType: "task",
-          sourceId: right.taskId,
+          sourceType: right.taskId ? "task" : "habit",
+          sourceId: right.taskId ?? right.habitId ?? right.id,
           provider: "fmn",
           title: right.title,
           startTime: right.startTime,
@@ -202,20 +220,26 @@ export async function detectConflictsByDateRange(
               ),
             ),
         );
+        const itemKeys = items.map((item) =>
+          [item.sourceType, item.sourceId, item.provider || "none"].join(":"),
+        );
+        const startsAt = items.map((item) => item.startTime).sort()[0];
+        const endsAt = items.map((item) => item.endTime).sort().slice(-1)[0];
 
         conflicts.push({
-          conflictId: uuidv4(),
+          conflictId: uuidv5(
+            [userId, "fmn_vs_fmn", ...itemKeys, startsAt, endsAt].join("|"),
+            CONFLICT_NAMESPACE,
+          ),
           userId,
           type: "fmn_vs_fmn",
-          itemKeys: items.map((item) =>
-            [item.sourceType, item.sourceId, item.provider || "none"].join(":"),
-          ),
-          detectedAt: new Date().toISOString(),
-          startsAt: items.map((item) => item.startTime).sort()[0],
-          endsAt: items.map((item) => item.endTime).sort().slice(-1)[0],
+          itemKeys,
+          detectedAt,
+          startsAt,
+          endsAt,
           items,
           status: "open",
-          updatedAt: new Date().toISOString(),
+          updatedAt: detectedAt,
         });
       }
     }
@@ -224,4 +248,88 @@ export async function detectConflictsByDateRange(
   await calendarRepository.saveConflicts(conflicts);
 
   return conflicts;
+}
+
+export async function resolveConflict(
+  userId: string,
+  conflictId: string,
+  action: "continue" | "cancel",
+) {
+  const conflict = await calendarRepository.getConflictById(conflictId);
+
+  if (!conflict || conflict.userId !== userId) {
+    throw new Error("Conflict not found");
+  }
+
+  if (conflict.status !== "open") {
+    return {
+      conflictId,
+      status: conflict.status,
+      updatedCalendarEvents: 0,
+      skipped: true,
+    };
+  }
+
+  let updatedCalendarEvents = 0;
+  let deletedTasks = 0;
+
+  if (action === "continue") {
+    for (const item of conflict.items) {
+      if (item.provider !== "fmn") {
+        continue;
+      }
+
+      if (item.sourceType === "task") {
+        updatedCalendarEvents += await calendarRepository.updateCheckConflictByTaskId(
+          item.sourceId,
+          false,
+        );
+      }
+
+      if (item.sourceType === "habit") {
+        updatedCalendarEvents += await calendarRepository.updateCheckConflictByHabitId(
+          item.sourceId,
+          false,
+        );
+      }
+    }
+
+    await calendarRepository.updateConflictStatus(
+      conflictId,
+      "resolved_continue",
+    );
+  }
+
+  if (action === "cancel") {
+    for (const item of conflict.items) {
+      if (item.sourceType !== "task" || item.provider !== "fmn") {
+        continue;
+      }
+
+      await sourceRepository.deleteTask(item.sourceId);
+      await calendarRepository.deleteCalendarEventsByTaskId(item.sourceId);
+      deletedTasks += 1;
+    }
+
+    await calendarRepository.updateConflictStatus(
+      conflictId,
+      "resolved_cancel",
+    );
+
+    return {
+      conflictId,
+      status: "resolved_cancel",
+      updatedCalendarEvents: 0,
+      deletedTasks,
+      skipped: deletedTasks === 0,
+    };
+  }
+
+  return {
+    conflictId,
+    status: "resolved_continue",
+    updatedCalendarEvents,
+    deletedTasks: 0,
+    skipped: false,
+  };
 }
