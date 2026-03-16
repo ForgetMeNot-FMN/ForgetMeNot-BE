@@ -6,6 +6,17 @@ import { flowerDefinitionRepository } from "./flowerDefinitions/flowerDefinition
 import { firestore } from "./firebaseAdmin";
 import { cancelNotificationBySourceId } from "./notificationClient";
 
+export function computeStreak(
+  currentStreak: number,
+  lastWateredDate: string | null,
+  today: string,
+  yesterday: string
+): number {
+  if (lastWateredDate === today) return currentStreak;
+  if (lastWateredDate === yesterday) return currentStreak + 1;
+  return 1;
+}
+
 class FlowerService {
 
   async createFlower(userId: string, data: any) {
@@ -160,8 +171,15 @@ class FlowerService {
         updatedAt: now,
       });
 
+      const today = dayjs(now).format("YYYY-MM-DD");
+      const yesterday = dayjs(now).subtract(1, "day").format("YYYY-MM-DD");
+      const newStreak = computeStreak(garden.streak ?? 0, garden.lastWateredDate ?? null, today, yesterday);
+
       tx.update(gardenRef, {
         water: garden.water - 1,
+        lastWateredDate: today,
+        streak: newStreak,
+        totalWateredCount: (garden.totalWateredCount ?? 0) + 1,
         updatedAt: now,
       });
 

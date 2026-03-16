@@ -1,7 +1,7 @@
 import { gardenRepository } from "./gardenRepository";
 import { flowerRepository } from "./flowerRepository";
 import { logger } from "../utils/logger";
-import { GrowthStage } from "../utils/enums";
+import { computeStreak } from "./flowerService";
 import dayjs from "dayjs";
 
 class GardenService {
@@ -34,16 +34,7 @@ class GardenService {
 
     const today = dayjs().format("YYYY-MM-DD");
     const yesterday = dayjs().subtract(1, "day").format("YYYY-MM-DD");
-
-    let newStreak = garden.streak;
-
-    if (garden.lastWateredDate === today) {
-      // aynı gün → streak değişmez
-    } else if (garden.lastWateredDate === yesterday) {
-      newStreak += 1;
-    } else {
-      newStreak = 1;
-    }
+    const newStreak = computeStreak(garden.streak, garden.lastWateredDate ?? null, today, yesterday);
 
     await gardenRepository.update(userId, {
       water: garden.water - 1,
@@ -82,8 +73,7 @@ class GardenService {
 
   async getGardenView(userId: string) {
 
-    const garden = await gardenRepository.getByUserId(userId);
-    if (!garden) throw new Error("Garden not found");
+    const garden = await this.getGarden(userId);
 
     const flowers = await flowerRepository.getAll(userId);
 
