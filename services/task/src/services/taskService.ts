@@ -247,10 +247,33 @@ class TaskService {
 
     logger.info("Task updated", { taskId });
 
-    return {
-      ...task,
-      ...updateData,
-    };
+    const updatedTask = { ...task, ...updateData };
+    try {
+      const startTime = updatedTask.startTime instanceof Date
+        ? updatedTask.startTime.toISOString()
+        : updatedTask.startTime;
+      const endTime = updatedTask.endTime instanceof Date
+        ? updatedTask.endTime.toISOString()
+        : updatedTask.endTime;
+
+      if (startTime && endTime) {
+        await publishCalendarEvent({
+          userId: task.userId,
+          provider: "fmn",
+          sourceType: "task",
+          taskId,
+          title: updatedTask.title,
+          startTime,
+          endTime,
+          isAllDay: false,
+          checkConflict: true,
+        });
+      }
+    } catch (error) {
+      logger.warn("Failed to publish calendar event for task update", { taskId, error });
+    }
+
+    return updatedTask;
   }
 
 

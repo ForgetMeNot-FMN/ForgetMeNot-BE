@@ -164,6 +164,99 @@ class HabitService {
     return habit;
   }
 
+  async updateHabit(userId: string, habitId: string, body: Partial<habitDTO>) {
+    logger.info("Update habit request", { userId, habitId });
+
+    const habit = await habitRepository.findById(habitId, userId);
+    if (!habit) throw new Error("Habit not found");
+
+    const updateData: Partial<Habit> = {};
+    if (body.title !== undefined) updateData.title = body.title;
+    if (body.description !== undefined) updateData.description = body.description;
+    if (body.schedule !== undefined) updateData.schedule = body.schedule;
+    if (body.status !== undefined) updateData.status = body.status;
+    if (body.targetValue !== undefined) updateData.targetValue = body.targetValue;
+    if (body.locationTrigger !== undefined) updateData.locationTrigger = body.locationTrigger;
+
+    await habitRepository.update(habitId, updateData);
+
+    const updatedHabit = { ...habit, ...updateData } as Habit;
+
+    if (body.notificationEnabled) {
+      try {
+        await deleteHabitNotifications(userId, habitId);
+        const timezone = body.timezone ?? "UTC";
+        const timeOfDay = body.notificationTime ?? "09:00";
+        const schedule = updatedHabit.schedule;
+
+        if (schedule.type === "weekly") {
+          await createHabitNotification({
+            userId,
+            title: updatedHabit.title,
+            sourceId: habitId,
+            sourceType: "HABIT",
+            scheduleType: "RECURRING",
+            timezone,
+            repeatRule: {
+              interval: "weekly",
+              daysOfWeek: schedule.days,
+              timesOfDay: [timeOfDay],
+            },
+            priority: body.notificationPriority,
+            type: body.notificationType,
+          });
+        } else if (schedule.type === "interval") {
+          const hour = timeOfDay.split(":")[0];
+          await createHabitNotification({
+            userId,
+            title: updatedHabit.title,
+            sourceId: habitId,
+            sourceType: "HABIT",
+            scheduleType: "CRON",
+            cronExpression: `0 ${hour} */${schedule.everyNDays} * *`,
+            timezone,
+            priority: body.notificationPriority,
+            type: body.notificationType,
+          });
+        } else if (schedule.type === "fixed") {
+          for (const date of schedule.dates) {
+            await createHabitNotification({
+              userId,
+              title: updatedHabit.title,
+              sourceId: habitId,
+              sourceType: "HABIT",
+              scheduleType: "ONCE",
+              scheduledAt: new Date(`${date}T${timeOfDay}:00`),
+              timezone,
+              priority: body.notificationPriority,
+              type: body.notificationType,
+            });
+          }
+        }
+        logger.info("Habit notifications updated", { userId, habitId });
+      } catch (error) {
+        logger.error("Failed to update habit notifications", {
+          userId,
+          habitId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    try {
+      await publishHabitCalendarEvents(userId, updatedHabit);
+    } catch (error) {
+      logger.warn("Failed to publish calendar events for habit update", {
+        userId,
+        habitId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+
+    logger.info("Habit updated", { userId, habitId });
+    return updatedHabit;
+  }
+
   async deleteHabit(userId: string, habitId: string) {
     logger.warn("Delete habit request", { userId });
 

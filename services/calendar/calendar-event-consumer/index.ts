@@ -20,6 +20,7 @@ type CalendarEventPayload = {
   sourceType: "task" | "habit";
   taskId?: string;
   habitId?: string;
+  externalEventId?: string;
   title?: string;
   startTime: string;
   endTime: string;
@@ -47,7 +48,16 @@ export async function consumer(topicMessage: { data?: PubSubData }) {
     return null;
   }
 
-  const eventId = uuidv4();
+  let eventId: string;
+  if (payload.provider === "google" && payload.externalEventId) {
+    eventId = payload.externalEventId;
+  } else if (payload.taskId) {
+    eventId = payload.taskId;
+  } else if (payload.habitId) {
+    eventId = `${payload.habitId}_${payload.startTime}`;
+  } else {
+    eventId = uuidv4();
+  }
   const doc = {
     id: eventId,
     userId: payload.userId,
@@ -57,6 +67,7 @@ export async function consumer(topicMessage: { data?: PubSubData }) {
     title: payload.title ?? null,
     startTime: payload.startTime,
     endTime: payload.endTime,
+    externalEventId: payload.externalEventId ?? null,
     isAllDay: payload.isAllDay ?? false,
     checkConflict: payload.checkConflict ?? false,
     lastSyncedAt: new Date().toISOString(),
