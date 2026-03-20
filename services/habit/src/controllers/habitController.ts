@@ -35,6 +35,16 @@ export async function getActiveHabitsHandler(req: Request, res: Response) {
   }
 }
 
+export async function updateHabitHandler(req: Request, res: Response) {
+  try {
+    const { userId, habitId } = req.params;
+    const result = await habitService.updateHabit(userId, habitId, req.body);
+    return res.json({ success: true, data: result });
+  } catch (err: any) {
+    return res.status(400).json({ success: false, message: err.message });
+  }
+}
+
 export async function deleteHabitHandler(req: Request, res: Response) {
   try {
     const { userId } = req.params;

@@ -1,24 +1,15 @@
 import { Response } from "express";
 import {
   detectConflictsByDateRange,
-  getUserEventsByDateRange,
   resolveConflict,
   validateDateRange,
 } from "../services/calendarService";
+import { calendarRepository } from "../repositories/calendarRepository";
 import { logger } from "../utils/logger";
 import { AuthRequest } from "../middlewares/authMiddleware";
 
 export async function getEvents(req: AuthRequest, res: Response) {
   try {
-    const accessToken = req.headers["x-google-access-token"] as string;
-
-    if (!accessToken) {
-      return res.status(401).json({
-        success: false,
-        message: "Google access token missing",
-      });
-    }
-
     const userId = req.params.userId;
 
     const from =
@@ -30,9 +21,11 @@ export async function getEvents(req: AuthRequest, res: Response) {
         ? req.query.to
         : new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString();
 
-    logger.info("Fetching and syncing calendar events", { userId, from, to });
+    await validateDateRange(from, to);
 
-    const events = await getUserEventsByDateRange(accessToken, userId, from, to);
+    logger.info("Fetching calendar events from Firestore", { userId, from, to });
+
+    const events = await calendarRepository.getCalendarEventsByDateRange(userId, from, to);
 
     res.json({
       success: true,
