@@ -21,6 +21,17 @@ class UserService {
       allowNotification: true,
       fcmTokens: [],
       permissions: payload.permissions,
+      // Default user onboarding values
+      onboarding: {
+        completed: false,
+        goals: ["be_consistent"],
+        painPoints: ["procrastination"],
+        motivationType: "reminder",
+        tonePreference: "motivational",
+        dailyCommitment: 20,
+        preferredTime: "evening",
+        selfDisciplineLevel: 2,
+      },
       created_at: new Date(),
     });
 
@@ -44,7 +55,10 @@ class UserService {
   }
 
   async updateUser(userId: string, data: Partial<User>) {
-    logger.info("Update user request", { userId, updatedFields: Object.keys(data) });
+    logger.info("Update user request", {
+      userId,
+      updatedFields: Object.keys(data),
+    });
 
     await userRepository.update(userId, data);
 
