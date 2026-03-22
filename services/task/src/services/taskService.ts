@@ -4,7 +4,7 @@ import { taskDTO } from "../models/taskDTO";
 import { normalizeDateOnly, normalizeDateTime } from "../utils/dateParser";
 import dayjs from "dayjs";
 import { notificationClient } from "../clients/notificationClient";
-import { publishCalendarEvent } from "../clients/calendarEventPublisher";
+import { publishCalendarEvent, publishCalendarDeleteEvent } from "../clients/calendarEventPublisher";
 import { envs } from "../utils/const";
 
 class TaskService {
@@ -97,7 +97,15 @@ class TaskService {
     });
     if (!body.notificationEnabled) {
       try {
+        logger.info("Publishing calendar create event for task", {
+          action: "create",
+          userId,
+          taskId: task.taskId,
+          title: task.title,
+          startTime: (task.startTime ?? new Date()).toISOString(),
+        });
         await publishCalendarEvent({
+          action: "create",
           userId,
           provider: "fmn",
           sourceType: "task",
@@ -164,7 +172,15 @@ class TaskService {
     }
 
     try {
+      logger.info("Publishing calendar create event for task", {
+        action: "create",
+        userId,
+        taskId: task.taskId,
+        title: task.title,
+        startTime: (task.startTime ?? new Date()).toISOString(),
+      });
       await publishCalendarEvent({
+        action: "create",
         userId,
         provider: "fmn",
         sourceType: "task",
@@ -191,13 +207,26 @@ class TaskService {
   async deleteTask(taskId: string) {
     logger.warn("Delete task request", { taskId });
 
-    await taskRepository.delete(taskId);
-    logger.info("Task deleted", { taskId });
+    const task = await taskRepository.getTaskById(taskId);
+    const notificationId = await taskRepository.getNotificationIdByTaskId(taskId);
 
-    const notificationId =
-      await taskRepository.getNotificationIdByTaskId(taskId);
+    if (task) {
+      try {
+        logger.info("Publishing calendar delete event for task", { action: "delete", taskId, userId: task.userId });
+        await publishCalendarDeleteEvent(task.userId, taskId);
+      } catch (error) {
+        logger.warn("Failed to publish calendar delete event for task", {
+          taskId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
     await notificationClient.cancelTaskNotifications(notificationId);
     logger.info("Related task notifications cancelled", { taskId });
+
+    await taskRepository.delete(taskId);
+    logger.info("Task deleted", { taskId });
   }
 
   async updateTask(taskId: string, body: Partial<taskDTO>) {
@@ -249,26 +278,28 @@ class TaskService {
 
     const updatedTask = { ...task, ...updateData };
     try {
-      const startTime = updatedTask.startTime instanceof Date
-        ? updatedTask.startTime.toISOString()
-        : updatedTask.startTime;
-      const endTime = updatedTask.endTime instanceof Date
-        ? updatedTask.endTime.toISOString()
-        : updatedTask.endTime;
+      const startTime = toISOString(updatedTask.startTime);
+      const endTime = toISOString(updatedTask.endTime) ?? toISOString(updatedTask.startTime);
 
-      if (startTime && endTime) {
-        await publishCalendarEvent({
-          userId: task.userId,
-          provider: "fmn",
-          sourceType: "task",
-          taskId,
-          title: updatedTask.title,
-          startTime,
-          endTime,
-          isAllDay: false,
-          checkConflict: true,
-        });
-      }
+      logger.info("Publishing calendar update event for task", {
+        action: "create",
+        taskId,
+        title: updatedTask.title,
+        startTime,
+        endTime,
+      });
+      await publishCalendarEvent({
+        action: "create",
+        userId: task.userId,
+        provider: "fmn",
+        sourceType: "task",
+        taskId,
+        title: updatedTask.title,
+        startTime: startTime!,
+        endTime: endTime!,
+        isAllDay: false,
+        checkConflict: true,
+      });
     } catch (error) {
       logger.warn("Failed to publish calendar event for task update", { taskId, error });
     }
@@ -343,3 +374,11 @@ class TaskService {
 }
 
 export const taskService = new TaskService();
+
+function toISOString(value: any): string | null {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "string") return value;
+  if (typeof value.toDate === "function") return value.toDate().toISOString();
+  return null;
+}

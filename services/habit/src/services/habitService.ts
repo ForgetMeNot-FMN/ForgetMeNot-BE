@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { habitCompletionRepository } from "../repository/habitCompletionRepository";
 import dayjs from "dayjs";
 import { createHabitNotification, deleteHabitNotifications } from "../clients/notificationClient";
-import { publishCalendarEvent } from "../clients/calendarEventPublisher";
+import { publishCalendarEvent, publishCalendarDeleteEvent } from "../clients/calendarEventPublisher";
 import { envs } from "../utils/const";
 
 class HabitService {
@@ -244,6 +244,8 @@ class HabitService {
     }
 
     try {
+      logger.info("Publishing calendar delete+recreate for habit update", { action: "delete→create", userId, habitId });
+      await publishCalendarDeleteEvent(userId, habitId);
       await publishHabitCalendarEvents(userId, updatedHabit);
     } catch (error) {
       logger.warn("Failed to publish calendar events for habit update", {
@@ -260,18 +262,23 @@ class HabitService {
   async deleteHabit(userId: string, habitId: string) {
     logger.warn("Delete habit request", { userId });
 
+    try {
+      logger.info("Publishing calendar delete event for habit", { action: "delete", userId, habitId });
+      await publishCalendarDeleteEvent(userId, habitId);
+    } catch (error) {
+      logger.warn("Failed to publish calendar delete event for habit", {
+        userId,
+        habitId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+
+    const deletedNotifications = await deleteHabitNotifications(userId, habitId);
+    logger.info("Habit notifications deleted", { userId, habitId, deletedNotifications });
+
     const deletedHabit = await habitRepository.delete(userId, habitId);
     logger.info("Habit deleted", { userId, deletedHabit });
 
-    const deletedNotifications = await deleteHabitNotifications(
-      userId,
-      habitId,
-    );
-    logger.info("Habit notifications deleted", {
-      userId,
-      habitId,
-      deletedNotifications,
-    });
     return deletedHabit;
   }
 
@@ -345,8 +352,9 @@ async function publishHabitCalendarEvents(userId: string, habit: Habit): Promise
   }
 
   const DEFAULT_DURATION_MINUTES = 60;
-  const DAYS_AHEAD = 7;
+  const DAYS_AHEAD = 30;
   const today = dayjs().startOf("day");
+  const end = today.add(DAYS_AHEAD, "day");
   const dates: string[] = [];
 
   if (habit.schedule.type === "weekly") {
@@ -358,20 +366,35 @@ async function publishHabitCalendarEvents(userId: string, habit: Habit): Promise
     }
   } else if (habit.schedule.type === "interval") {
     const start = dayjs(habit.schedule.startDate).startOf("day");
-    for (let i = 0; i < DAYS_AHEAD; i++) {
-      const candidate = start.add(i * habit.schedule.everyNDays, "day");
-      if (candidate.isBefore(today.add(DAYS_AHEAD, "day"))) {
+    const everyN = habit.schedule.everyNDays;
+    const daysSinceStart = today.diff(start, "day");
+    const intervalsElapsed = Math.max(0, Math.floor(daysSinceStart / everyN));
+    let candidate = start.add(intervalsElapsed * everyN, "day");
+    while (candidate.isBefore(end)) {
+      if (!candidate.isBefore(today)) {
         dates.push(candidate.format("YYYY-MM-DD"));
       }
+      candidate = candidate.add(everyN, "day");
     }
   } else if (habit.schedule.type === "fixed") {
-    dates.push(...habit.schedule.dates);
+    dates.push(...habit.schedule.dates.filter(d => !dayjs(d).isBefore(today)));
   }
+
+  logger.info("Publishing calendar create events for habit", {
+    action: "create",
+    userId,
+    habitId: habit.id,
+    title: habit.title,
+    scheduleType: habit.schedule.type,
+    daysAhead: DAYS_AHEAD,
+    dates,
+  });
 
   for (const date of dates) {
     const startTime = dayjs(`${date}T09:00:00`).toISOString();
     const endTime = dayjs(`${date}T09:00:00`).add(DEFAULT_DURATION_MINUTES, "minute").toISOString();
     await publishCalendarEvent({
+      action: "create",
       userId,
       provider: "fmn",
       sourceType: "habit",
@@ -384,7 +407,7 @@ async function publishHabitCalendarEvents(userId: string, habit: Habit): Promise
     });
   }
 
-  logger.info("Habit calendar events published", {
+  logger.info("Habit calendar events publish completed", {
     userId,
     habitId: habit.id,
     count: dates.length,

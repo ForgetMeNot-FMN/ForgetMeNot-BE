@@ -15,6 +15,7 @@ type PubSubData = {
 };
 
 type CalendarEventPayload = {
+  action?: "create" | "delete";
   userId: string;
   provider: "fmn" | "google";
   sourceType: "task" | "habit";
@@ -22,10 +23,10 @@ type CalendarEventPayload = {
   habitId?: string;
   externalEventId?: string;
   title?: string;
-  startTime: string;
-  endTime: string;
-  isAllDay: boolean;
-  checkConflict: boolean;
+  startTime?: string;
+  endTime?: string;
+  isAllDay?: boolean;
+  checkConflict?: boolean;
 };
 
 function decodePayload(topicMessage: PubSubData): CalendarEventPayload | null {
@@ -39,12 +40,47 @@ function decodePayload(topicMessage: PubSubData): CalendarEventPayload | null {
   }
 }
 
+async function handleDelete(payload: CalendarEventPayload, messageId?: string): Promise<{ deleted: number }> {
+  const collection = firestore.collection(CALENDAR_EVENTS_COLLECTION);
+
+  if (payload.sourceType === "task" && payload.taskId) {
+    await collection.doc(payload.taskId).delete();
+    logger.info("CalendarEvent deleted by taskId", { taskId: payload.taskId, messageId });
+    return { deleted: 1 };
+  }
+
+  if (payload.sourceType === "habit" && payload.habitId) {
+    const snapshot = await collection.where("habitId", "==", payload.habitId).get();
+    const batch = firestore.batch();
+    snapshot.docs.forEach((doc) => batch.delete(doc.ref));
+    await batch.commit();
+    logger.info("CalendarEvents deleted by habitId", {
+      habitId: payload.habitId,
+      count: snapshot.size,
+      messageId,
+    });
+    return { deleted: snapshot.size };
+  }
+
+  logger.warn("Delete event missing taskId or habitId", { payload, messageId });
+  return { deleted: 0 };
+}
+
 export async function consumer(topicMessage: { data?: PubSubData }) {
   const payload = decodePayload(topicMessage.data ?? {});
   const messageId = topicMessage.data?.message?.messageId;
 
-  if (!payload?.userId || !payload.startTime || !payload.endTime) {
+  if (!payload?.userId) {
     logger.warn("Invalid calendar event payload", { messageId });
+    return null;
+  }
+
+  if (payload.action === "delete") {
+    return handleDelete(payload, messageId);
+  }
+
+  if (!payload.startTime || !payload.endTime) {
+    logger.warn("Invalid calendar event payload: missing startTime or endTime", { messageId });
     return null;
   }
 
@@ -58,6 +94,7 @@ export async function consumer(topicMessage: { data?: PubSubData }) {
   } else {
     eventId = uuidv4();
   }
+
   const doc = {
     id: eventId,
     userId: payload.userId,

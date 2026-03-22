@@ -12,6 +12,12 @@ export const calendarAccountRepository = {
     });
   },
 
+  async existsByUserId(userId: string): Promise<boolean> {
+    const docId = `google_${userId}`;
+    const snap = await firestore.collection(CALENDAR_ACCOUNTS_COLLECTION).doc(docId).get();
+    return snap.exists;
+  },
+
   async upsertCalendarAccount(
     userId: string,
     data: Omit<CalendarAccount, "userId" | "createdAt" | "updatedAt" | "nextSyncToken">,
