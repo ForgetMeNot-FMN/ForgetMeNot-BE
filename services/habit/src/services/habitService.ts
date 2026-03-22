@@ -117,12 +117,10 @@ class HabitService {
           userId,
           habitId: habit.id,
         });
-      } finally {
-        return habit;
       }
     }
 
-    // CalendarEvent Pub/Sub mesajları
+    // CalendarEvent Pub/Sub mesajları - her zaman publish edilmeli
     try {
       await publishHabitCalendarEvents(userId, habit);
     } catch (error) {
