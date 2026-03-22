@@ -81,6 +81,7 @@ async function publishGoogleEventsInitialSync(userId: string, accessToken: strin
       const endTime = event.end?.dateTime ?? `${event.end?.date}T00:00:00Z`;
 
       const message = {
+        action: "create" as const,
         userId,
         provider: "google" as const,
         title: event.summary ?? "(No title)",
@@ -107,6 +108,12 @@ async function publishGoogleEventsInitialSync(userId: string, accessToken: strin
 
 export const googleCalendarAuthService = {
   async linkGoogleCalendar(input: LinkGoogleCalendarInput): Promise<void> {
+    const alreadyLinked = await calendarAccountRepository.existsByUserId(input.userId);
+    if (alreadyLinked) {
+      logger.info("Google Calendar already linked, skipping sync", { userId: input.userId });
+      return;
+    }
+
     const tokens = await exchangeServerAuthCode(input.serverAuthCode);
 
     const expiryDate = tokens.expiry_date
