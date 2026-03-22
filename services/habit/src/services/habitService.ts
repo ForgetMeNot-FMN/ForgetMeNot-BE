@@ -297,11 +297,18 @@ class HabitService {
 
     return completionData;
   }
-  async getHabitProgress(userId: string, habitId: string, days: number = 7) {
+  async isCompletedToday(userId: string, habitId: string) {
     const habit = await habitRepository.findById(habitId, userId);
     if (!habit) throw new Error("Habit not found");
-    const to = dayjs().format("YYYY-MM-DD");
-    const from = dayjs()
+    const completed = await habitCompletionRepository.isCompletedToday(habitId);
+    return { habitId, completedToday: completed };
+  }
+
+  async getHabitProgress(userId: string, habitId: string, days: number = 7, today?: string) {
+    const habit = await habitRepository.findById(habitId, userId);
+    if (!habit) throw new Error("Habit not found");
+    const to = today ?? dayjs().format("YYYY-MM-DD");
+    const from = dayjs(to)
       .subtract(days - 1, "day")
       .format("YYYY-MM-DD");
     const completions = await habitCompletionRepository.findBetweenDates(

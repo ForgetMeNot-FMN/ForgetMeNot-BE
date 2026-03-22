@@ -1,4 +1,5 @@
 import { firestore } from "../services/firebaseAdmin";
+import dayjs from "dayjs";
 
 const COLLECTION = "habit_completions";
 
@@ -33,6 +34,16 @@ export const habitCompletionRepository = {
         ...data,
         createdAt: new Date(),
       });
+  },
+
+  async isCompletedToday(habitId: string) {
+    const today = dayjs().format("YYYY-MM-DD");
+    const snap = await firestore
+      .collection(COLLECTION)
+      .doc(`${habitId}_${today}`)
+      .get();
+
+    return snap.exists && snap.data()?.completed === true;
   },
 
   async findBetweenDates(
