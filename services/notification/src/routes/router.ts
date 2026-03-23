@@ -15,7 +15,7 @@ import {
   getTaskReminderTimesHandler,
   updateTaskReminderTimesHandler,
   notificationClickedHandler,
-  cancelNotificationsBySourceHandler
+  deleteBySourceIdHandler,
 } from "../controllers/notificationController";
 
 const router = Router();
@@ -55,10 +55,13 @@ router.patch("/:notificationId/enable", enableNotificationHandler);
 // Disable notification
 router.patch("/:notificationId/disable", disableNotificationHandler);
 
-// Soft delete 
+// sourceId'ye göre tüm notificationları iptal et (habit/task update veya delete)
+router.delete("/source/:sourceId", deleteBySourceIdHandler);
+
+// Soft delete
 router.delete("/:notificationId/soft", softDeleteNotificationHandler);
 
-// Delete 
+// Delete
 router.delete("/:notificationId", deleteNotificationHandler);
 
 router.post(

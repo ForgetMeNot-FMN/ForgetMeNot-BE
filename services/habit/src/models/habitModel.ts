@@ -9,6 +9,8 @@ export interface Habit {
   locationTrigger?: LocationTrigger;
   type: "count" | "duration" | "boolean";
   targetValue?: number; // count veya duration için
+  notificationEnabled?: boolean;
+  notificationTime?: string | null; // "HH:MM" formatında
   currentStreak: number;
   longestStreak: number;
   createdAt: Date;

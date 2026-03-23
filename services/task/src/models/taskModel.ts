@@ -6,9 +6,9 @@ export interface Task {
   durationMinutes: number | null;
   startTime: Date | null;
   endTime?: Date | null; // duration eklenirse otomatik gelicek
-  startDate?: string | null; // YYYY-MM-DD ! ekledim ama hiç kullanmıyorum kodda
-  endDate?: string | null; // YYYY-MM-DD ! ekledim ama hiç kullanmıyorum kodda
   locationTrigger?: LocationTrigger;
+  notificationEnabled?: boolean;
+  notificationTime?: Date | null;
   isActive: boolean;
   isCompleted: boolean;
   completedAt?: Date | null;

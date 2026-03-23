@@ -271,6 +271,13 @@ class NotificationService {
     return { updated: notifications.length };
   }
 
+  // sourceId'ye göre tüm bildirimleri iptal et (habit/task silindiğinde veya güncellendiğinde)
+  async deleteNotificationsBySourceId(sourceId: string): Promise<void> {
+    logger.info("Cancel notifications by sourceId", { sourceId });
+    await notificationRepository.deleteBySourceId(sourceId);
+    logger.info("Notifications cancelled by sourceId", { sourceId });
+  }
+
   async markNotificationClicked(notificationId: string) {
 
     const notification = await notificationRepository.getNotificationById(notificationId);
