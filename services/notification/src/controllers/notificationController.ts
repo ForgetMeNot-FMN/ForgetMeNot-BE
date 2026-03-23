@@ -302,17 +302,3 @@ export async function notificationClickedHandler(
   }
 }
 
-export async function cancelNotificationsBySourceHandler(req: Request, res: Response) {
-  try {
-    const { sourceId } = req.params;
-
-    const result = await notificationService.cancelBySourceId(sourceId);
-
-    return res.json({ success: true, data: result });
-  } catch (err: any) {
-    return res.status(400).json({
-      success: false,
-      message: err.message,
-    });
-  }
-}
