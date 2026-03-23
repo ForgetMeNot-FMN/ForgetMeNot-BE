@@ -23,7 +23,7 @@ export const notificationClient = {
           enabled: true,
           scheduleType: "ONCE",
           scheduledAt: params.scheduledAt.toISOString(),
-          timezone: params.timezone ?? "UTC",
+          timezone: params.timezone ?? "Europe/Istanbul",
           priority: params.priority ?? "normal",
           type: params.type ?? "REMINDER",
           sourceType: "TASK",
@@ -50,8 +50,8 @@ export const notificationClient = {
   async cancelTaskNotifications(taskId: string) {
     try {
       await axios.patch(
-        `${baseURL}/notifications/${taskId}`,
-        { enabled: false, deliveryStatus: "CANCELLED" },
+        `${baseURL}/notifications/source/${taskId}`,
+        { enabled: false }
       );
     } catch (error) {
       logger.error("Cancel task notifications failed", {

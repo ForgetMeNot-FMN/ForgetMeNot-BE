@@ -126,9 +126,23 @@ class TaskService {
       return task;
     }
 
-    const notificationTime = body.notificationTime
-      ? normalizeDateTime(body.notificationTime)
-      : startTime;
+    let notificationTime: Date | null = null;
+
+    if (body.notificationTime) {
+      const reminderDate = new Date(body.notificationTime);
+
+      const hour = reminderDate.getHours();
+      const minute = reminderDate.getMinutes();
+
+      notificationTime = dayjs(startTime)
+        .hour(hour)
+        .minute(minute)
+        .second(0)
+        .millisecond(0)
+        .toDate();
+    } else {
+      notificationTime = startTime;
+    }
 
     if (!notificationTime) {
       logger.warn("Notification time is missing, skipping notification", {
@@ -208,7 +222,6 @@ class TaskService {
     logger.warn("Delete task request", { taskId });
 
     const task = await taskRepository.getTaskById(taskId);
-    const notificationId = await taskRepository.getNotificationIdByTaskId(taskId);
 
     if (task) {
       try {
@@ -222,7 +235,7 @@ class TaskService {
       }
     }
 
-    await notificationClient.cancelTaskNotifications(notificationId);
+    await notificationClient.cancelTaskNotifications(taskId);
     logger.info("Related task notifications cancelled", { taskId });
 
     await taskRepository.delete(taskId);
@@ -275,6 +288,40 @@ class TaskService {
     await taskRepository.update(taskId, updateData);
 
     logger.info("Task updated", { taskId });
+
+    if (body.notificationTime !== undefined || body.startTime !== undefined) {
+      await notificationClient.cancelTaskNotifications(taskId);
+
+      const updatedStartTime = updateData.startTime ?? task.startTime;
+
+      if (updatedStartTime) {
+        let newNotificationTime: Date;
+
+        if (body.notificationTime) {
+          const reminderDate = new Date(body.notificationTime);
+
+          const hour = reminderDate.getHours();
+          const minute = reminderDate.getMinutes();
+
+          newNotificationTime = dayjs(updatedStartTime)
+            .hour(hour)
+            .minute(minute)
+            .second(0)
+            .toDate();
+        } else {
+          newNotificationTime = updatedStartTime;
+        }
+
+        if (newNotificationTime > new Date()) {
+          await notificationClient.createNotification({
+            userId: task.userId,
+            title: updateData.title ?? task.title,
+            scheduledAt: newNotificationTime,
+            taskId,
+          });
+        }
+      }
+    }
 
     const updatedTask = { ...task, ...updateData };
     try {
