@@ -268,6 +268,27 @@ async logNotificationClick(
       was_clicked: true,
       clicked_at: new Date().toISOString(),
     });
+},
+
+async cancelBySourceId(sourceId: string) {
+  const snapshot = await firestore
+    .collection("notifications")
+    .where("sourceId", "==", sourceId)
+    .get();
+
+  if (snapshot.empty) return;
+
+  const batch = firestore.batch();
+
+  snapshot.docs.forEach((doc) => {
+    batch.update(doc.ref, {
+      enabled: false,
+      deliveryStatus: "CANCELLED",
+      updatedAt: new Date(),
+    });
+  });
+
+  await batch.commit();
 }
 
 };

@@ -72,16 +72,30 @@ export async function completeHabitHandler(req: Request, res: Response) {
   }
 };
 
+export async function isCompletedTodayHandler(req: Request, res: Response) {
+  try {
+    const userId = req.headers["x-user-id"] as string;
+    const { habitId } = req.params;
+
+    const result = await habitService.isCompletedToday(userId, habitId);
+    res.json(result);
+  } catch (err: any) {
+    res.status(400).json({ message: err.message });
+  }
+}
+
 export async function progressHandler(req: Request, res: Response) {
   try {
     const userId = req.headers["x-user-id"] as string;
     const { habitId } = req.params;
     const days = Number(req.query.days) || 7;
+    const today = typeof req.query.today === "string" ? req.query.today : undefined;
 
     const result = await habitService.getHabitProgress(
       userId,
       habitId,
-      days
+      days,
+      today,
     );
 
     res.json(result);

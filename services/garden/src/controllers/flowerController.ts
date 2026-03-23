@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { flowerService } from "../services/flowerService";
+import { triggerAwardCheck } from "../services/awardsClient";
 
 
 export async function createFlower(req: Request, res: Response) {
@@ -57,7 +58,19 @@ export async function waterFlower(req: Request, res: Response) {
 
     const result = await flowerService.waterFlower(userId, flowerId);
 
-    return res.json({ success: true, data: result });
+    const messageId = await triggerAwardCheck({
+      userId,
+      eventType: "flower.watered",
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        ...result,
+        awardEventPublished: Boolean(messageId),
+        awardEventMessageId: messageId,
+      },
+    });
   } catch (err: any) {
     return res.status(400).json({ success: false, message: err.message });
   }

@@ -294,6 +294,14 @@ class NotificationService {
     );
   }
 
+  async cancelBySourceId(sourceId: string) {
+    logger.info("Cancel notifications by sourceId", { sourceId });
+
+    await notificationRepository.cancelBySourceId(sourceId);
+
+    return { message: "Notifications cancelled by sourceId" };
+  }
+
 }
 
 export const notificationService = new NotificationService();

@@ -43,6 +43,9 @@ router.get("/:notificationId", getNotificationHandler);
 // Create 
 router.post("/:userId", createNotificationHandler);
 
+// Task Delete olunca notification'ların hepsinin silinmesi
+router.patch("/source/:sourceId", cancelNotificationsBySourceHandler);
+
 // Update 
 router.patch("/:notificationId", updateNotificationHandler);
 
