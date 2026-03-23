@@ -262,6 +262,17 @@ export async function updateTaskReminderTimesHandler(
   }
 }
 
+// sourceId'ye göre tüm notificationları iptal et
+export async function deleteBySourceIdHandler(req: Request, res: Response) {
+  try {
+    const { sourceId } = req.params;
+    await notificationService.deleteNotificationsBySourceId(sourceId);
+    return res.json({ success: true, message: "Notifications cancelled" });
+  } catch (err: any) {
+    return res.status(400).json({ success: false, message: err.message });
+  }
+}
+
 export async function notificationClickedHandler(
   req: Request,
   res: Response

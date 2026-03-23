@@ -65,15 +65,7 @@ export async function createHabitNotification(params: NotificationParams) {
     }
 }
 
-export async function deleteHabitNotifications(userId: string, habitId: string) {
-  await axios.delete(
-    `${baseURL}/notifications/${userId}`,
-    {
-      data: {
-        sourceType: "HABIT",
-        sourceId: habitId,
-      },
-    }
-  );
+export async function deleteHabitNotifications(habitId: string) {
+  await axios.delete(`${baseURL}/notifications/source/${habitId}`);
 }
 

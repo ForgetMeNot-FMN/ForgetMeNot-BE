@@ -229,6 +229,28 @@ async getNotificationsBySourceId(sourceId: string): Promise<AppNotification[]> {
   }));
 },
 
+// sourceId'ye göre tüm notificationları soft-delete + cancel eder (habit/task delete için)
+async deleteBySourceId(sourceId: string): Promise<void> {
+  const snapshot = await firestore
+    .collection(NOTIFICATION_COLLECTION)
+    .where("sourceId", "==", sourceId)
+    .where("isDeleted", "==", false)
+    .get();
+
+  if (snapshot.empty) return;
+
+  const batch = firestore.batch();
+  snapshot.docs.forEach((doc) => {
+    batch.update(doc.ref, {
+      isDeleted: true,
+      enabled: false,
+      deliveryStatus: "CANCELLED",
+      updatedAt: new Date().toISOString(),
+    });
+  });
+  await batch.commit();
+},
+
 async logNotificationClick(
   notificationId: string,
   userId: string,

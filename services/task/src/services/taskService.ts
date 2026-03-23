@@ -1,7 +1,7 @@
 import { taskRepository } from "./taskRepository";
 import { logger } from "../utils/logger";
 import { taskDTO } from "../models/taskDTO";
-import { normalizeDateOnly, normalizeDateTime } from "../utils/dateParser";
+import { normalizeDateTime } from "../utils/dateParser";
 import dayjs from "dayjs";
 import { notificationClient } from "../clients/notificationClient";
 import { publishCalendarEvent, publishCalendarDeleteEvent } from "../clients/calendarEventPublisher";
@@ -59,25 +59,22 @@ class TaskService {
     const startTime = normalizeDateTime(body.startTime);
     const endTime = body.endTime ? normalizeDateTime(body.endTime) : null;
 
-    const startDate = normalizeDateOnly(body.startDate);
-    const endDate = normalizeDateOnly(body.endDate);
-
-  // Duration varsa endTime'ın otomatik hesaplanması
-    let finalEndTime = endTime;
-
-    if (dm && startTime && !endTime) {
-      finalEndTime = new Date(startTime.getTime() + dm * 60000);
-    }
+    // Duration varsa endTime'ı otomatik hesapla
+    const finalEndTime = (dm && startTime && !endTime)
+      ? new Date(startTime.getTime() + dm * 60000)
+      : endTime;
 
     const task = await taskRepository.create(userId, {
       title: body.title,
       description: body.description || "",
       durationMinutes: dm ?? null,
       startTime,
-      endTime,
-      startDate: body.startDate ?? null,
-      endDate: body.endDate ?? null,
+      endTime: finalEndTime,
       locationTrigger: body.locationTrigger ?? null,
+      notificationEnabled: body.notificationEnabled ?? false,
+      notificationTime: body.notificationTime
+        ? normalizeDateTime(body.notificationTime)
+        : null,
       isActive: true,
       isCompleted: false,
       rewardGranted: false,
@@ -242,29 +239,24 @@ class TaskService {
     if (body.description !== undefined)
       updateData.description = body.description;
 
-    if (body.startDate !== undefined)
-      updateData.startDate = normalizeDateOnly(body.startDate);
-
-    if (body.endDate !== undefined)
-      updateData.endDate = normalizeDateOnly(body.endDate);
-
-    if (body.startTime !== undefined)
-      updateData.startTime = normalizeDateTime(body.startTime);
-
     if (body.endTime !== undefined)
       updateData.endTime = normalizeDateTime(body.endTime);
 
     if (body.locationTrigger !== undefined)
       updateData.locationTrigger = body.locationTrigger;
 
-    let duration = body.durationMinutes ?? task.durationMinutes;
+    if (body.notificationEnabled !== undefined)
+      updateData.notificationEnabled = body.notificationEnabled;
 
-    let startTime =
-      body.startTime !== undefined
-      ? (typeof body.startTime === "string"
-          ? new Date(body.startTime)
-          : body.startTime)
-        : task.startTime;
+    if ("notificationTime" in body)
+      updateData.notificationTime = body.notificationTime
+        ? normalizeDateTime(body.notificationTime)
+        : null;
+
+    const duration = body.durationMinutes ?? task.durationMinutes;
+    const startTime = body.startTime !== undefined
+      ? normalizeDateTime(body.startTime)
+      : task.startTime;
 
     if (duration && startTime) {
       updateData.durationMinutes = duration;
@@ -275,6 +267,38 @@ class TaskService {
     await taskRepository.update(taskId, updateData);
 
     logger.info("Task updated", { taskId });
+
+    // Notification güncelleme: önce eski bildirimi iptal et, gerekirse yenisini oluştur
+    if (body.notificationEnabled !== undefined || "notificationTime" in body) {
+      try {
+        await notificationClient.cancelTaskNotifications(taskId);
+
+        const notifEnabled = body.notificationEnabled ?? task.notificationEnabled ?? false;
+        const rawTime = "notificationTime" in body ? body.notificationTime : task.notificationTime;
+        const notifTime = rawTime ? normalizeDateTime(rawTime) : null;
+        const effectiveStart = updateData.startTime ?? task.startTime;
+
+        if (notifEnabled) {
+          const scheduledAt = notifTime ?? effectiveStart;
+          if (scheduledAt && scheduledAt > new Date()) {
+            await notificationClient.createNotification({
+              userId: task.userId,
+              title: updateData.title ?? task.title,
+              scheduledAt,
+              taskId,
+            });
+            logger.info("Task notification re-created on update", { taskId, scheduledAt: scheduledAt.toISOString() });
+          } else {
+            logger.warn("Notification time in the past or missing, skipping re-create", { taskId });
+          }
+        }
+      } catch (err) {
+        logger.error("Failed to update task notification on task update", {
+          taskId,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
 
     const updatedTask = { ...task, ...updateData };
     try {
