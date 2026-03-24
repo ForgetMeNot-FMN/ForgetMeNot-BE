@@ -216,6 +216,17 @@ async markAsProcessing(notificationId: string) {
     });
 },
 
+async markAsScheduled(notificationId: string) {
+  await firestore
+    .collection(NOTIFICATION_COLLECTION)
+    .doc(notificationId)
+    .update({
+      deliveryStatus: "SCHEDULED",
+      lastAttemptAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+},
+
 async getNotificationsBySourceId(sourceId: string): Promise<AppNotification[]> {
   const snapshot = await firestore
     .collection(NOTIFICATION_COLLECTION)

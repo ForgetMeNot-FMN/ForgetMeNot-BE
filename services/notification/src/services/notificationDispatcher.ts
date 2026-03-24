@@ -72,6 +72,12 @@ class NotificationDispatcher {
       notificationId: notification.notificationId,
       successCount: response.successCount,
       failureCount: response.failureCount,
+      tokenResults: tokens.map((token, index) => ({
+        tokenSuffix: token.slice(-8),
+        success: response.responses[index]?.success ?? false,
+        error: response.responses[index]?.error?.code,
+        message: response.responses[index]?.error?.message,
+      })),
       responses: response.responses.map(r => ({
       success: r.success,
       error: r.error?.code,
@@ -106,12 +112,21 @@ class NotificationDispatcher {
     }
 
     if (response && response.successCount > 0) {
-      await notificationRepository.markAsSent(notificationId);
+      // RECURRING ve CRON notification'lar tekrar çalışabilmesi için SCHEDULED'a döndür
+      if (
+        notification.scheduleType === "RECURRING" ||
+        notification.scheduleType === "CRON"
+      ) {
+        await notificationRepository.markAsScheduled(notificationId);
+      } else {
+        await notificationRepository.markAsSent(notificationId);
+      }
 
       logger.info("Notification sent successfully", {
         notificationId,
         success: response.successCount,
         failure: response.failureCount,
+        scheduleType: notification.scheduleType,
       });
     } else {
       await notificationRepository.markAsFailed(notificationId);
