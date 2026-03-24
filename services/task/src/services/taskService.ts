@@ -151,14 +151,14 @@ class TaskService {
 
     if (notificationTime < new Date()) {
       logger.warn(
-        "Notification time is in the past, skipping notification creation",
+        "Notification time is in the past, Cloud Tasks will dispatch immediately",
         {
           userId,
           taskId: task.taskId,
           notificationTime: notificationTime.toISOString(),
         },
       );
-      return task;
+      // Cloud Tasks geçmiş zamanlı görevleri hemen çalıştırır, devam et
     }
 
     try {
