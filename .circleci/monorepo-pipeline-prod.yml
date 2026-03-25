@@ -49,6 +49,9 @@ parameters:
   run-calendar-event-consumer-service-workflow:
     type: boolean
     default: false
+  run-ai-service-workflow:
+    type: boolean
+    default: false
 jobs:
   forgetmenot-user-service-prod-deploy:
     docker:
@@ -423,6 +426,43 @@ jobs:
               --max-instances=20 \
               --min-instances=0 \
               --quiet
+  forgetmenot-ai-service-prod-deploy:
+    docker:
+      - image: google/cloud-sdk:528.0.0
+    environment:
+      PROJECT_ID: << pipeline.parameters.project-id >>
+      SERVICE_ACCOUNT: << pipeline.parameters.service-account >>
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: false
+      - run:
+          name: Build & Deploy AI Service (Cloud Run)
+          command: |
+            echo "$GCP_SA_KEY" > /tmp/gcp-key.json
+            gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
+            gcloud config set project $PROJECT_ID
+
+            apt-get update
+            apt-get install bash npm -y
+
+            cd services/ai
+            npm ci
+            npm run build 
+            cd ../../
+
+            gcloud run deploy forgetmenot-ai-service-prod \
+              --cpu=1 \
+              --memory=512Mi \
+              --source ./services/ai \
+              --service-account=$SERVICE_ACCOUNT \
+              --set-secrets=/temp/.env=projects/305796297986/secrets/forgetmenot-ai-prod-env:latest \
+              --region=europe-west1 \
+              --allow-unauthenticated \
+              --min-instances=1 \
+              --max-instances=10 \
+              --quiet \
+              --ingress all
 workflows:
   run-garden-service-workflow:
     when:
@@ -523,3 +563,12 @@ workflows:
           filters:
             branches:
               only: main              
+  run-ai-service-workflow:
+    when:
+      or:
+        - << pipeline.parameters.run-ai-service-workflow >>
+    jobs:
+      - forgetmenot-ai-service-prod-deploy:
+          filters:
+            branches:
+              only: main
