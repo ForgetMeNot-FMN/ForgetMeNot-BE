@@ -40,10 +40,21 @@ export const firebaseAuthService = {
         age: null,
         gender: null,
         allowNotification: false,
+        fcmTokens: [],
         permissions: {
           allowCalendar: false,
           allowKVKK: false,
           allowLocation: false,
+        },
+        onboarding: {
+          completed: false,
+          goals: ["be_consistent"],
+          painPoints: ["procrastination"],
+          motivationType: "reminder",
+          tonePreference: "motivational",
+          dailyCommitment: 20,
+          preferredTime: "evening",
+          selfDisciplineLevel: 2,
         },
         created_at: new Date(),
       });
