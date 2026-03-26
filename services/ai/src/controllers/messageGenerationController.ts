@@ -22,13 +22,31 @@ export async function generateNotificationMessageHandler(
     // Decision ver
     const decision = notificationDecisionService.decide(context);
 
+    const reasonData = JSON.parse(decision.reason);
+
     // Basit message (LLM yerine fallback)
     let message = "";
 
     if (decision.type === "WARNING") {
-      message = "You've been missing your tasks. Let's get back on track 💪";
+      if (reasonData.focusArea === "habit") {
+        message = "You've been missing your habits. Let's get back on track 💪";
+      } else if (reasonData.focusArea === "task") {
+        message = "You've been missing your tasks. Let's get back on track 💪";
+      } else {
+        message = "You've been missing your routines. Let's get back on track 💪";
+      }
+
     } else if (decision.type === "CELEBRATION") {
-      message = "Amazing job! You're on fire 🔥 Keep it going!";
+      if (reasonData.trigger === "high_streak") {
+        message = "Incredible consistency! Your streak is amazing 🔥";
+      } else if (reasonData.trigger === "high_performance") {
+        message = "Amazing job! You're performing at your best 🚀";
+      } else if (reasonData.trigger === "strong_daily_progress") {
+        message = "Great progress today! Keep the momentum going 💯";
+      } else {
+        message = "Nice work today! Keep it up 🌱";
+      }
+
     } else {
       message = "You're doing good. Stay consistent and keep improving 🌱";
     }
