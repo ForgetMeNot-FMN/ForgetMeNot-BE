@@ -142,7 +142,7 @@ class HabitService {
     const habits = await habitRepository.findActiveByUser(userId);
     if (!habits || habits.length === 0) {
       logger.warn("Habit not found", { userId });
-      throw new Error("Habit not found");
+      return [];
     }
 
     logger.debug("Habit fetched", { userId });
@@ -156,7 +156,7 @@ class HabitService {
     const habit = await habitRepository.findById(habitId, userId);
     if (!habit) {
       logger.warn("Habit not found", { userId });
-      throw new Error("Habit not found");
+      return null;
     }
 
     logger.debug("Habit fetched", { userId });
@@ -168,7 +168,10 @@ class HabitService {
     logger.info("Update habit request", { userId, habitId });
 
     const habit = await habitRepository.findById(habitId, userId);
-    if (!habit) throw new Error("Habit not found");
+    if (!habit) {
+      logger.warn("Habit not found", { userId, habitId });
+      return null;
+    }
 
     const updateData: Partial<Habit> = {};
     if (body.title !== undefined) updateData.title = body.title;
