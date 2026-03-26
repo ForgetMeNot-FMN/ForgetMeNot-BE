@@ -47,9 +47,10 @@ export async function getEvents(req: AuthRequest, res: Response) {
 export async function resolveConflictHandler(req: AuthRequest, res: Response) {
   try {
     const userId = req.params.userId;
-    const { conflictId, action } = req.body as {
+    const { conflictId, action, targetSourceId } = req.body as {
       conflictId?: string;
       action?: "continue" | "cancel";
+      targetSourceId?: string;
     };
 
     if (!conflictId || !action) {
@@ -66,7 +67,12 @@ export async function resolveConflictHandler(req: AuthRequest, res: Response) {
       });
     }
 
-    const result = await resolveConflict(userId, conflictId, action);
+    const result = await resolveConflict(
+      userId,
+      conflictId,
+      action,
+      targetSourceId,
+    );
 
     return res.json({
       success: true,
