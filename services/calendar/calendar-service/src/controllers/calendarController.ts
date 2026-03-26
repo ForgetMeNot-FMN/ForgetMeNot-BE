@@ -1,6 +1,8 @@
 import { Response } from "express";
 import {
   detectConflictsByDateRange,
+  projectHabitEvents,
+  projectHabitEventsByUser,
   resolveConflict,
   validateDateRange,
 } from "../services/calendarService";
@@ -22,6 +24,7 @@ export async function getEvents(req: AuthRequest, res: Response) {
         : new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString();
 
     await validateDateRange(from, to);
+    await projectHabitEventsByUser(userId, from, to);
 
     logger.info("Fetching calendar events from Firestore", { userId, from, to });
 
@@ -104,6 +107,30 @@ export async function getConflicts(req: AuthRequest, res: Response) {
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to fetch conflicts",
+    });
+  }
+}
+
+export async function projectHabitEventsHandler(req: AuthRequest, res: Response) {
+  try {
+    const { from, to } = req.body as {
+      from?: string;
+      to?: string;
+    };
+
+    const result = await projectHabitEvents(from, to);
+
+    return res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    logger.error("Failed to project habit events", error);
+
+    return res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to project habit events",
     });
   }
 }

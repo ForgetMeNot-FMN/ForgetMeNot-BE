@@ -1,7 +1,8 @@
 import dayjs from "dayjs";
 import { google } from "googleapis";
-import { v4 as uuidv4, v5 as uuidv5 } from "uuid";
+import { v5 as uuidv5 } from "uuid";
 import { ConflictItem, ConflictRecord } from "../models/conflictModel";
+import { Habit } from "../models/habitModel";
 import { InternalCalendarEvent } from "../models/internalCalendarModel";
 import { calendarRepository } from "../repositories/calendarRepository";
 import { sourceRepository } from "../repositories/sourceRepository";
@@ -10,6 +11,7 @@ import { logger } from "../utils/logger";
 
 const MAX_RANGE_DAYS = 31;
 const CONFLICT_NAMESPACE = "8a7c2d90-6dfd-4ce2-b7d2-2f6c1aa52f6f";
+
 export async function validateDateRange(from: string, to: string) {
   const fromDate = dayjs(from);
   const toDate = dayjs(to);
@@ -25,6 +27,85 @@ export async function validateDateRange(from: string, to: string) {
   if (toDate.diff(fromDate, "day", true) > MAX_RANGE_DAYS) {
     throw new Error("Date range cannot exceed 31 days");
   }
+}
+
+export async function projectHabitEvents(
+  from?: string,
+  to?: string,
+) {
+  const rangeFrom = from ?? dayjs().startOf("day").toISOString();
+  const rangeTo = to ?? dayjs().add(30, "day").endOf("day").toISOString();
+
+  await validateDateRange(rangeFrom, rangeTo);
+
+  const habits = await sourceRepository.getActiveHabits();
+  const events: InternalCalendarEvent[] = [];
+
+  for (const habit of habits) {
+    const habitEvents = await buildHabitCalendarEvents(habit, rangeFrom, rangeTo);
+    events.push(...habitEvents);
+  }
+
+  const result = await calendarRepository.upsertCalendarEvents(events);
+
+  logger.info("Projected habit calendar events", {
+    from: rangeFrom,
+    to: rangeTo,
+    totalHabits: habits.length,
+    totalEvents: events.length,
+    insertedCount: result.insertedCount,
+    updatedCount: result.updatedCount,
+  });
+
+  return {
+    from: rangeFrom,
+    to: rangeTo,
+    totalHabits: habits.length,
+    totalEvents: events.length,
+    insertedCount: result.insertedCount,
+    updatedCount: result.updatedCount,
+  };
+}
+
+export async function projectHabitEventsByUser(
+  userId: string,
+  from?: string,
+  to?: string,
+) {
+  const rangeFrom = from ?? dayjs().startOf("day").toISOString();
+  const rangeTo = to ?? dayjs().add(30, "day").endOf("day").toISOString();
+
+  await validateDateRange(rangeFrom, rangeTo);
+
+  const habits = await sourceRepository.getActiveHabitsByUser(userId);
+  const events: InternalCalendarEvent[] = [];
+
+  for (const habit of habits) {
+    const habitEvents = await buildHabitCalendarEvents(habit, rangeFrom, rangeTo);
+    events.push(...habitEvents);
+  }
+
+  const result = await calendarRepository.upsertCalendarEvents(events);
+
+  logger.info("Projected user habit calendar events", {
+    userId,
+    from: rangeFrom,
+    to: rangeTo,
+    totalHabits: habits.length,
+    totalEvents: events.length,
+    insertedCount: result.insertedCount,
+    updatedCount: result.updatedCount,
+  });
+
+  return {
+    userId,
+    from: rangeFrom,
+    to: rangeTo,
+    totalHabits: habits.length,
+    totalEvents: events.length,
+    insertedCount: result.insertedCount,
+    updatedCount: result.updatedCount,
+  };
 }
 
 export async function getGoogleEvents(
@@ -332,4 +413,79 @@ export async function resolveConflict(
     deletedTasks: 0,
     skipped: false,
   };
+}
+
+async function buildHabitCalendarEvents(
+  habit: Habit,
+  from: string,
+  to: string,
+): Promise<InternalCalendarEvent[]> {
+  if (!habit.schedule) {
+    return [];
+  }
+
+  const rangeStart = dayjs(from).startOf("day");
+  const rangeEnd = dayjs(to).endOf("day");
+  const timeOfDay = habit.notificationTime ?? "09:00";
+  const dates: string[] = [];
+
+  if (habit.schedule.type === "weekly") {
+    let current = rangeStart;
+    while (current.isBefore(rangeEnd) || current.isSame(rangeEnd, "day")) {
+      if (habit.schedule.days.includes(current.day())) {
+        dates.push(current.format("YYYY-MM-DD"));
+      }
+      current = current.add(1, "day");
+    }
+  }
+
+  if (habit.schedule.type === "interval") {
+    const start = dayjs(habit.schedule.startDate).startOf("day");
+    const everyN = habit.schedule.everyNDays;
+
+    if (everyN > 0) {
+      const daysSinceStart = rangeStart.diff(start, "day");
+      const intervalsElapsed = Math.max(0, Math.floor(daysSinceStart / everyN));
+      let candidate = start.add(intervalsElapsed * everyN, "day");
+
+      while (candidate.isBefore(rangeEnd) || candidate.isSame(rangeEnd, "day")) {
+        if (!candidate.isBefore(rangeStart)) {
+          dates.push(candidate.format("YYYY-MM-DD"));
+        }
+        candidate = candidate.add(everyN, "day");
+      }
+    }
+  }
+
+  if (habit.schedule.type === "fixed") {
+    for (const date of habit.schedule.dates) {
+      const day = dayjs(date).startOf("day");
+      if (
+        (day.isAfter(rangeStart) || day.isSame(rangeStart, "day")) &&
+        (day.isBefore(rangeEnd) || day.isSame(rangeEnd, "day"))
+      ) {
+        dates.push(day.format("YYYY-MM-DD"));
+      }
+    }
+  }
+
+  return dates.map((date) => {
+    const startTime = dayjs(`${date}T${timeOfDay}:00`).toISOString();
+    const endTime = dayjs(`${date}T${timeOfDay}:00`)
+      .add(60, "minute")
+      .toISOString();
+
+    return {
+      id: `${habit.id}_${startTime}`,
+      userId: habit.userId,
+      provider: "fmn",
+      habitId: habit.id,
+      title: habit.title,
+      startTime,
+      endTime,
+      isAllDay: false,
+      checkConflict: false,
+      lastSyncedAt: new Date(),
+    };
+  });
 }

@@ -14,4 +14,5 @@ export const envs = {
   JWT_SECRET: requireEnv("JWT_SECRET"),
   PORT: process.env.PORT || "8080",
   GCP_PROJECT_ID: requireEnv("GCP_PROJECT_ID"),
+  INTERNAL_SERVICE_TOKEN: requireEnv("INTERNAL_SERVICE_TOKEN"),
 };
