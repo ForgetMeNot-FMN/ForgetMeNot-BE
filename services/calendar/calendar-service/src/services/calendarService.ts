@@ -335,6 +335,7 @@ export async function resolveConflict(
   userId: string,
   conflictId: string,
   action: "continue" | "cancel",
+  targetSourceId?: string,
 ) {
   const conflict = await calendarRepository.getConflictById(conflictId);
 
@@ -382,15 +383,47 @@ export async function resolveConflict(
   }
 
   if (action === "cancel") {
-    for (const item of conflict.items) {
-      if (item.sourceType !== "task" || item.provider !== "fmn") {
-        continue;
+    const taskItems = conflict.items.filter(
+      (item) => item.sourceType === "task" && item.provider === "fmn",
+    );
+
+    if (taskItems.length === 0) {
+      await calendarRepository.updateConflictStatus(
+        conflictId,
+        "resolved_cancel",
+      );
+
+      return {
+        conflictId,
+        status: "resolved_cancel",
+        updatedCalendarEvents: 0,
+        deletedTasks: 0,
+        skipped: true,
+      };
+    }
+
+    let selectedTask = taskItems[0];
+
+    if (taskItems.length > 1) {
+      if (!targetSourceId) {
+        throw new Error("targetSourceId is required for multi-task conflicts");
       }
 
-      await sourceRepository.deleteTask(item.sourceId);
-      await calendarRepository.deleteCalendarEventsByTaskId(item.sourceId);
-      deletedTasks += 1;
+      const matchedTask = taskItems.find((item) => item.sourceId === targetSourceId);
+      if (!matchedTask) {
+        throw new Error("Selected task is not part of this conflict");
+      }
+
+      selectedTask = matchedTask;
     }
+
+    if (targetSourceId && selectedTask.sourceId !== targetSourceId) {
+      throw new Error("Selected task is not part of this conflict");
+    }
+
+    await sourceRepository.deleteTask(selectedTask.sourceId);
+    await calendarRepository.deleteCalendarEventsByTaskId(selectedTask.sourceId);
+    deletedTasks = 1;
 
     await calendarRepository.updateConflictStatus(
       conflictId,
