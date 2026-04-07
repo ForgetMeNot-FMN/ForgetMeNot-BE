@@ -10,4 +10,9 @@ export interface GenerateNotificationMessageResponse {
   tone: string;
   message: string;
   fallbackUsed: boolean;
+  llmPromptContext?: {
+    systemInstruction: string;
+    userContextSummary: string;
+    userSpecificNotes: string[];
+  };
 }

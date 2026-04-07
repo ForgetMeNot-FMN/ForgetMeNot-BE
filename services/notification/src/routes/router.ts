@@ -15,6 +15,9 @@ import {
   getTaskReminderTimesHandler,
   updateTaskReminderTimesHandler,
   notificationClickedHandler,
+  notificationGenerationSourceHandler,
+  notificationCompletedHandler,
+  notificationIgnoredHandler,
   deleteBySourceIdHandler,
 } from "../controllers/notificationController";
 
@@ -25,6 +28,9 @@ router.post("/internal/notifications/dispatch", dispatchNotificationHandler);
 
 // wasClicked = true
 router.post("/click", notificationClickedHandler);
+router.post("/generation-source", notificationGenerationSourceHandler);
+router.post("/completed", notificationCompletedHandler);
+router.post("/ignored", notificationIgnoredHandler);
 
 // Get notifications of a user
 // Get all notifications of a user = /notifications/user/{userId}

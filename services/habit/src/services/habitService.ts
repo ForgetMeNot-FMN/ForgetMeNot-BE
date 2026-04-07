@@ -4,7 +4,11 @@ import { Habit, habitDTO } from "../models/habitModel";
 import { v4 as uuidv4 } from "uuid";
 import { habitCompletionRepository } from "../repository/habitCompletionRepository";
 import dayjs from "dayjs";
-import { createHabitNotification, deleteHabitNotifications } from "../clients/notificationClient";
+import {
+  createHabitNotification,
+  deleteHabitNotifications,
+  markHabitNotificationsCompleted,
+} from "../clients/notificationClient";
 import { publishCalendarEvent, publishCalendarDeleteEvent } from "../clients/calendarEventPublisher";
 import { envs } from "../utils/const";
 
@@ -306,6 +310,12 @@ class HabitService {
     logger.info("User rewarded for habit completion", {
       userId,
       completionData,
+    });
+
+    await markHabitNotificationsCompleted(habitId);
+    logger.info("Habit notifications marked completed", {
+      userId,
+      habitId,
     });
 
     return completionData;

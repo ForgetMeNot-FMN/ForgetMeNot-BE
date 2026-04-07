@@ -69,3 +69,10 @@ export async function deleteHabitNotifications(habitId: string) {
   await axios.delete(`${baseURL}/notifications/source/${habitId}`);
 }
 
+export async function markHabitNotificationsCompleted(habitId: string) {
+  await axios.post(`${baseURL}/notifications/completed`, {
+    sourceId: habitId,
+    generationSource: "SYSTEM",
+  });
+}
+

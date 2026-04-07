@@ -2,10 +2,20 @@ import { notificationRepository } from "./notificationRepository";
 import { logger } from "../utils/logger";
 import { notificationDto, UpdateNotificationDto } from "../models/notificationDTO";
 import { AppNotification } from "../models/notificationModel";
+import {
+  NotificationFeedbackOutcome,
+  NotificationGenerationSource,
+} from "../models/notificationLogModel";
 import { userClient } from "./userClient";
 import { cloudTasksClient } from "./cloudTasksClient";
 import { notificationDispatcher } from "./notificationDispatcher";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezonePlugin from "dayjs/plugin/timezone";
+import { firestore } from "./firebaseAdmin";
+
+dayjs.extend(utc);
+dayjs.extend(timezonePlugin);
 
 class NotificationService {
   
@@ -278,19 +288,94 @@ class NotificationService {
     logger.info("Notifications cancelled by sourceId", { sourceId });
   }
 
-  async markNotificationClicked(notificationId: string) {
-
+  private async trackNotificationFeedback(
+    notificationId: string,
+    outcome: NotificationFeedbackOutcome,
+    generationSource: NotificationGenerationSource = "UNKNOWN"
+  ) {
     const notification = await notificationRepository.getNotificationById(notificationId);
 
     if (!notification) {
       throw new Error("Notification not found");
     }
 
-    await notificationRepository.logNotificationClick(
+    await notificationRepository.logNotificationFeedback(
       notification.notificationId,
       notification.userId,
       notification.sourceType,
-      notification.sourceId ?? ""
+      notification.sourceId ?? "",
+      outcome,
+      generationSource
+    );
+  }
+
+  async markNotificationClicked(
+    notificationId: string,
+    generationSource: NotificationGenerationSource = "UNKNOWN"
+  ) {
+    await this.trackNotificationFeedback(
+      notificationId,
+      "CLICKED",
+      generationSource
+    );
+  }
+
+  async setNotificationLogGenerationSource(
+    notificationId: string,
+    generationSource: NotificationGenerationSource
+  ) {
+    const notification =
+      await notificationRepository.getNotificationById(notificationId);
+
+    if (!notification) {
+      throw new Error("Notification not found");
+    }
+
+    await notificationRepository.setNotificationLogGenerationSource(
+      notification,
+      generationSource
+    );
+  }
+
+  async markNotificationCompleted(
+    notificationId: string,
+    generationSource: NotificationGenerationSource = "UNKNOWN"
+  ) {
+    await this.trackNotificationFeedback(
+      notificationId,
+      "COMPLETED",
+      generationSource
+    );
+  }
+
+  async markNotificationsCompletedBySourceId(
+    sourceId: string,
+    generationSource: NotificationGenerationSource = "UNKNOWN"
+  ) {
+    const notifications =
+      await notificationRepository.getNotificationsBySourceId(sourceId);
+
+    for (const notification of notifications) {
+      await this.trackNotificationFeedback(
+        notification.notificationId,
+        "COMPLETED",
+        generationSource === "UNKNOWN"
+          ? "SYSTEM"
+          : generationSource
+      );
+    }
+
+    return { updated: notifications.length };
+  }
+
+  async markNotificationIgnored(
+    notificationId: string,
+    generationSource: NotificationGenerationSource = "UNKNOWN"
+  ) {
+    await this.trackNotificationFeedback(
+      notificationId,
+      "IGNORED",
+      generationSource
     );
   }
 
