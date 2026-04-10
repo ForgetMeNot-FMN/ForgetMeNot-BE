@@ -91,19 +91,33 @@ class AwardsService {
       headers.Authorization = `Bearer ${envs.STRAPI_API_TOKEN}`;
     }
 
-    const response = await fetch(url.toString(), { headers });
-    if (!response.ok) {
+    const maxRetries = 5;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      const response = await fetch(url.toString(), { headers });
+
+      if (response.ok) {
+        const payload = await response.json() as any;
+        const data = Array.isArray(payload?.data) ? payload.data : [];
+
+        return data
+          .map((item: any) => normalizeStrapiAward(item, baseUrl))
+          .filter((item: StrapiAwardDefinition | null): item is StrapiAwardDefinition => item !== null);
+      }
+
+      if (response.status === 503 && attempt < maxRetries) {
+        const delayMs = Math.min(2000 * 2 ** (attempt - 1), 20000); // 2s, 4s, 8s, 16s, max 20s
+        logger.warn("Strapi returned 503, retrying...", { attempt, delayMs });
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        continue;
+      }
+
       const body = await response.text();
       logger.error("Failed to fetch awards from Strapi", { status: response.status, body });
       throw new Error(`Strapi awards fetch failed (${response.status})`);
     }
 
-    const payload = await response.json() as any;
-    const data = Array.isArray(payload?.data) ? payload.data : [];
-
-    return data
-      .map((item: any) => normalizeStrapiAward(item, baseUrl))
-      .filter((item: StrapiAwardDefinition | null): item is StrapiAwardDefinition => item !== null);
+    throw new Error("Strapi awards fetch failed after max retries");
   }
 
   async getAwards(userId: string) {
