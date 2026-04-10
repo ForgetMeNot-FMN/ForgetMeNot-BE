@@ -11,6 +11,9 @@ const app = express();
 app.set("trust proxy", 1);
 
 app.use(cors());
+app.get("/health", (_req, res) => {
+  res.json({ ok: true, service: "garden" });
+});
 app.use(globalRateLimit);
 app.use(express.json());
 
