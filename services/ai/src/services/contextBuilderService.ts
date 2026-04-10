@@ -7,6 +7,8 @@ import {
   DailyActivitySnapshot,
   HabitCompletionRecord,
   HabitRecord,
+  NotificationRecord,
+  NotificationLogRecord,
   TaskRecord,
   UserContextDTO,
 } from "../models/userContextModel";
@@ -51,12 +53,26 @@ class ContextBuilderService {
       const to = now.format("YYYY-MM-DD");
       const from = now.subtract(days - 1, "day").format("YYYY-MM-DD");
 
-      const completions =
-        await userContextRepository.getHabitCompletionsByUserId(
+      const [completions, notificationLogs, notifications] = await Promise.all([
+        userContextRepository.getHabitCompletionsByUserId(
           userId,
           from,
           to,
-        );
+        ),
+        userContextRepository.getNotificationLogsByUserId(userId),
+        userContextRepository.getRecentNotificationsByUserId(userId),
+      ]);
+
+      const effectiveNotificationLogs =
+        await this.backfillIgnoredNotifications({
+          userId,
+          timezone: userTimezone,
+          notifications,
+          notificationLogs,
+          habits,
+          tasks,
+          completions,
+        });
 
       const activeHabits = habits.filter(
         (habit) => habit.status === "active",
@@ -78,7 +94,7 @@ class ContextBuilderService {
       const context: UserContextDTO = {
         userId,
         profile: {
-          username: user.username,
+          username: user.username ?? null,
           age: user.age ?? null,
           gender: user.gender ?? null,
           allowNotification: user.allowNotification ?? false,
@@ -122,6 +138,9 @@ class ContextBuilderService {
           completedToday: taskSummary.completedToday,
           pendingToday: taskSummary.pendingToday,
         },
+        notificationFeedback: this.buildNotificationFeedbackSummary(
+          effectiveNotificationLogs,
+        ),
         recentNDays: this.buildRecentActivity(
           days,
           activeHabits,
@@ -137,6 +156,8 @@ class ContextBuilderService {
             "habits",
             "tasks",
             "habit_completions",
+            "notifications",
+            "notification_logs",
           ],
           generatedForTimezone: userTimezone,
         },
@@ -303,6 +324,327 @@ class ContextBuilderService {
     };
   }
 
+  private buildNotificationFeedbackSummary(
+    logs: NotificationLogRecord[],
+  ) {
+    const recentLogs = logs.slice(0, 5);
+    const llmLogs = logs.filter(
+      (log) => log.generation_source === "LLM",
+    );
+    const systemLogs = logs.filter(
+      (log) => log.generation_source === "SYSTEM",
+    );
+    const llmGeneratedCount = logs.filter(
+      (log) => log.generation_source === "LLM",
+    ).length;
+    const systemGeneratedCount = logs.filter(
+      (log) => log.generation_source === "SYSTEM",
+    ).length;
+    const unknownGeneratedCount = logs.filter(
+      (log) =>
+        !log.generation_source ||
+        log.generation_source === "UNKNOWN",
+    ).length;
+
+    const clicks = logs.filter((log) => log.was_clicked).length;
+    const completions = logs.filter(
+      (log) => log.was_completed,
+    ).length;
+    const ignores = logs.filter((log) => log.was_ignored).length;
+
+    const userPromptNotes: string[] = [];
+
+    if (logs.length === 0) {
+      userPromptNotes.push(
+        "No notification feedback history yet; keep messaging broadly helpful and non-repetitive.",
+      );
+    }
+
+    if (completions > 0) {
+      userPromptNotes.push(
+        "This user has completed actions after notifications before, so actionable reminders can work well.",
+      );
+    }
+
+    const llmIgnores = llmLogs.filter((log) => log.was_ignored).length;
+    const systemIgnores = systemLogs.filter(
+      (log) => log.was_ignored,
+    ).length;
+    const systemCompletions = systemLogs.filter(
+      (log) => log.was_completed,
+    ).length;
+
+    if (llmIgnores >= 2) {
+      userPromptNotes.push(
+        "Prior LLM-generated notifications were often ignored; avoid repeating similar wording or tone.",
+      );
+    }
+
+    if (llmGeneratedCount > 0) {
+      userPromptNotes.push(
+        "Use LLM notification history as the main personalization signal; do not reuse stale phrasing from prior model-generated messages.",
+      );
+    }
+
+    if (systemGeneratedCount > 0 && systemCompletions > 0) {
+      userPromptNotes.push(
+        "Fixed system notifications have worked before; preserve their clarity when generating new copy.",
+      );
+    }
+
+    if (systemGeneratedCount > 0 && systemIgnores >= 2) {
+      userPromptNotes.push(
+        "Fixed system notifications are frequently ignored; a more adaptive LLM phrasing may perform better.",
+      );
+    }
+
+    return {
+      totalTracked: logs.length,
+      llmGeneratedCount,
+      systemGeneratedCount,
+      unknownGeneratedCount,
+      clicks,
+      completions,
+      ignores,
+      lastInteractionAt: logs[0]?.last_feedback_at ?? null,
+      recentLogs,
+      userPromptNotes,
+    };
+  }
+
+  private async backfillIgnoredNotifications(params: {
+    userId: string;
+    timezone: string;
+    notifications: NotificationRecord[];
+    notificationLogs: NotificationLogRecord[];
+    habits: HabitRecord[];
+    tasks: TaskRecord[];
+    completions: HabitCompletionRecord[];
+  }): Promise<NotificationLogRecord[]> {
+    const logsByNotificationId = new Map(
+      params.notificationLogs.map((log) => [log.notification_id, log]),
+    );
+
+    for (const notification of params.notifications) {
+      if (!notification.notificationId) continue;
+      if (!notification.sentAt) continue;
+      if (
+        notification.sourceType !== "TASK" &&
+        notification.sourceType !== "HABIT" &&
+        notification.sourceType !== "SYSTEM"
+      ) {
+        continue;
+      }
+
+      const existingLog = logsByNotificationId.get(
+        notification.notificationId,
+      );
+
+      if (
+        existingLog?.was_completed ||
+        existingLog?.was_ignored
+      ) {
+        continue;
+      }
+
+      if (notification.sourceType === "TASK") {
+        const task = params.tasks.find(
+          (item) => item.taskId === notification.sourceId,
+        );
+
+        if (!task || task.isCompleted) {
+          continue;
+        }
+
+        const endDate = this.toDayjs(task.endTime);
+        if (!endDate) {
+          continue;
+        }
+
+        if (!endDate.isBefore(dayjs())) {
+          continue;
+        }
+
+        await userContextRepository.upsertIgnoredNotificationLog({
+          notificationId: notification.notificationId,
+          userId: params.userId,
+          sourceType: "TASK",
+          sourceId: notification.sourceId ?? "",
+          generationSource:
+            existingLog?.generation_source ?? "SYSTEM",
+        });
+
+        logsByNotificationId.set(notification.notificationId, {
+          id: notification.notificationId,
+          notification_id: notification.notificationId,
+          user_id: params.userId,
+          source_type: "TASK",
+          source_id: notification.sourceId,
+          generation_source:
+            existingLog?.generation_source ?? "SYSTEM",
+          was_clicked: existingLog?.was_clicked ?? false,
+          clicked_at: existingLog?.clicked_at,
+          was_completed: existingLog?.was_completed ?? false,
+          completed_at: existingLog?.completed_at,
+          was_ignored: true,
+          ignored_at: new Date().toISOString(),
+          last_feedback_event: "IGNORED",
+          last_feedback_at: new Date().toISOString(),
+          created_at:
+            existingLog?.created_at ?? new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+      }
+
+      if (notification.sourceType === "HABIT") {
+        const sentDay = this.toDateKey(notification.sentAt);
+        if (!sentDay) {
+          continue;
+        }
+
+        const habitCompletedOnSentDay = params.completions.some(
+          (completion) =>
+            completion.habitId === notification.sourceId &&
+            completion.date === sentDay &&
+            completion.completed,
+        );
+
+        if (habitCompletedOnSentDay) {
+          continue;
+        }
+
+        const endOfSentDay = dayjs
+          .tz(sentDay, params.timezone)
+          .endOf("day");
+
+        if (!endOfSentDay.isBefore(dayjs().tz(params.timezone))) {
+          continue;
+        }
+
+        await userContextRepository.upsertIgnoredNotificationLog({
+          notificationId: notification.notificationId,
+          userId: params.userId,
+          sourceType: "HABIT",
+          sourceId: notification.sourceId ?? "",
+          generationSource:
+            existingLog?.generation_source ?? "SYSTEM",
+        });
+
+        logsByNotificationId.set(notification.notificationId, {
+          id: notification.notificationId,
+          notification_id: notification.notificationId,
+          user_id: params.userId,
+          source_type: "HABIT",
+          source_id: notification.sourceId,
+          generation_source:
+            existingLog?.generation_source ?? "SYSTEM",
+          was_clicked: existingLog?.was_clicked ?? false,
+          clicked_at: existingLog?.clicked_at,
+          was_completed: existingLog?.was_completed ?? false,
+          completed_at: existingLog?.completed_at,
+          was_ignored: true,
+          ignored_at: new Date().toISOString(),
+          last_feedback_event: "IGNORED",
+          last_feedback_at: new Date().toISOString(),
+          created_at:
+            existingLog?.created_at ?? new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+      }
+
+      if (
+        notification.sourceType === "SYSTEM" &&
+        notification.sourceId?.startsWith(`STREAK_${params.userId}_`) &&
+        (existingLog?.generation_source ?? "UNKNOWN") === "LLM"
+      ) {
+        const streakDate = notification.sourceId.split("_").pop();
+        const hasRecoveryCompletion = Boolean(
+          streakDate &&
+            params.completions.some(
+              (completion) =>
+                completion.userId === params.userId &&
+                completion.date === streakDate &&
+                completion.completed,
+            ),
+        );
+
+        if (hasRecoveryCompletion) {
+          await userContextRepository.upsertCompletedNotificationLog({
+            notificationId: notification.notificationId,
+            userId: params.userId,
+            sourceType: "HABIT",
+            sourceId: notification.sourceId,
+            generationSource: "LLM",
+          });
+
+          logsByNotificationId.set(notification.notificationId, {
+            id: notification.notificationId,
+            notification_id: notification.notificationId,
+            user_id: params.userId,
+            source_type: "HABIT",
+            source_id: notification.sourceId,
+            generation_source: "LLM",
+            was_clicked: existingLog?.was_clicked ?? false,
+            clicked_at: existingLog?.clicked_at,
+            was_completed: true,
+            completed_at: new Date().toISOString(),
+            was_ignored: false,
+            ignored_at: existingLog?.ignored_at,
+            last_feedback_event: "COMPLETED",
+            last_feedback_at: new Date().toISOString(),
+            created_at:
+              existingLog?.created_at ?? new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+          continue;
+        }
+
+        const currentBestStreak = params.habits.reduce(
+          (max, habit) => Math.max(max, habit.currentStreak ?? 0),
+          0,
+        );
+
+        if (currentBestStreak > 0) {
+          continue;
+        }
+
+        await userContextRepository.upsertIgnoredNotificationLog({
+          notificationId: notification.notificationId,
+          userId: params.userId,
+          sourceType: "HABIT",
+          sourceId: notification.sourceId,
+          generationSource: "LLM",
+        });
+
+        logsByNotificationId.set(notification.notificationId, {
+          id: notification.notificationId,
+          notification_id: notification.notificationId,
+          user_id: params.userId,
+          source_type: "HABIT",
+          source_id: notification.sourceId,
+          generation_source: "LLM",
+          was_clicked: existingLog?.was_clicked ?? false,
+          clicked_at: existingLog?.clicked_at,
+          was_completed: existingLog?.was_completed ?? false,
+          completed_at: existingLog?.completed_at,
+          was_ignored: true,
+          ignored_at: new Date().toISOString(),
+          last_feedback_event: "IGNORED",
+          last_feedback_at: new Date().toISOString(),
+          created_at:
+            existingLog?.created_at ?? new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+      }
+    }
+
+    return Array.from(logsByNotificationId.values()).sort((a, b) => {
+      const aTs = a.last_feedback_at ?? "";
+      const bTs = b.last_feedback_at ?? "";
+      return bTs.localeCompare(aTs);
+    });
+  }
+
   private isHabitExpectedOnDate(
     habit: HabitRecord,
     date: string,
@@ -388,6 +730,32 @@ class ContextBuilderService {
       return dayjs(maybeTimestamp.toDate()).format(
         "YYYY-MM-DD",
       );
+    }
+
+    return null;
+  }
+
+  private toDayjs(value: unknown) {
+    if (!value) return null;
+
+    if (value instanceof Date) {
+      return dayjs(value);
+    }
+
+    if (typeof value === "string") {
+      const parsed = dayjs(value);
+      return parsed.isValid() ? parsed : null;
+    }
+
+    if (
+      typeof value === "object" &&
+      value !== null &&
+      "toDate" in value
+    ) {
+      const maybeTimestamp = value as {
+        toDate: () => Date;
+      };
+      return dayjs(maybeTimestamp.toDate());
     }
 
     return null;

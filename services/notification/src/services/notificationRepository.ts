@@ -1,6 +1,11 @@
 import { firestore } from "./firebaseAdmin";
 import { AppNotification } from "../models/notificationModel";
 import {
+  NotificationFeedbackOutcome,
+  NotificationGenerationSource,
+  NotificationLogEntry,
+} from "../models/notificationLogModel";
+import {
   notificationDto,
   UpdateNotificationDto,
 } from "../models/notificationDTO";
@@ -262,23 +267,84 @@ async deleteBySourceId(sourceId: string): Promise<void> {
   await batch.commit();
 },
 
-async logNotificationClick(
+async logNotificationFeedback(
   notificationId: string,
   userId: string,
   sourceType: "HABIT" | "TASK" | "FLOWER" | "SYSTEM",
-  sourceId: string
+  sourceId: string,
+  outcome: NotificationFeedbackOutcome,
+  generationSource: NotificationGenerationSource = "UNKNOWN"
 ) {
+  const timestamp = new Date().toISOString();
+  const docRef = firestore.collection("notification_logs").doc(notificationId);
+  const existingDoc = await docRef.get();
+
+  const existingData = existingDoc.exists
+    ? (existingDoc.data() as Partial<NotificationLogEntry>)
+    : undefined;
+
+  const logEntry: NotificationLogEntry = {
+    notification_id: notificationId,
+    user_id: userId,
+    source_type: sourceType,
+    source_id: sourceId,
+    generation_source:
+      generationSource === "UNKNOWN"
+        ? existingData?.generation_source ?? "UNKNOWN"
+        : generationSource,
+    was_clicked: existingData?.was_clicked ?? false,
+    clicked_at: existingData?.clicked_at,
+    was_completed: existingData?.was_completed ?? false,
+    completed_at: existingData?.completed_at,
+    was_ignored: existingData?.was_ignored ?? false,
+    ignored_at: existingData?.ignored_at,
+    last_feedback_event: outcome,
+    last_feedback_at: timestamp,
+    created_at: existingData?.created_at ?? timestamp,
+    updated_at: timestamp,
+  };
+
+  if (outcome === "CLICKED") {
+    logEntry.was_clicked = true;
+    logEntry.clicked_at = timestamp;
+  }
+
+  if (outcome === "COMPLETED") {
+    logEntry.was_completed = true;
+    logEntry.completed_at = timestamp;
+  }
+
+  if (outcome === "IGNORED") {
+    logEntry.was_ignored = true;
+    logEntry.ignored_at = timestamp;
+  }
+
   await firestore
     .collection("notification_logs")
     .doc(notificationId)
-    .set({
-      notification_id: notificationId,
-      user_id: userId,
-      source_type: sourceType,
-      source_id: sourceId,
-      was_clicked: true,
-      clicked_at: new Date().toISOString(),
-    });
+    .set(logEntry, { merge: true });
+},
+
+async setNotificationLogGenerationSource(
+  notification: AppNotification,
+  generationSource: NotificationGenerationSource
+) {
+  const timestamp = new Date().toISOString();
+  await firestore
+    .collection("notification_logs")
+    .doc(notification.notificationId)
+    .set(
+      {
+        notification_id: notification.notificationId,
+        user_id: notification.userId,
+        source_type: notification.sourceType,
+        source_id: notification.sourceId ?? "",
+        generation_source: generationSource,
+        created_at: timestamp,
+        updated_at: timestamp,
+      },
+      { merge: true }
+    );
 },
 
 };

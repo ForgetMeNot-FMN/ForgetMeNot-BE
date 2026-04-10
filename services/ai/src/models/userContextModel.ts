@@ -7,6 +7,7 @@ export interface UserContextDTO {
   profile: UserContextProfile;
   habitStats: UserContextHabitStats;
   taskStats: UserContextTaskStats;
+  notificationFeedback: UserContextNotificationFeedback;
   recentNDays: DailyActivitySnapshot[];
   generatedAt: string;
   metadata: {
@@ -62,6 +63,19 @@ export interface DailyActivitySnapshot {
   taskDue: number;
 }
 
+export interface UserContextNotificationFeedback {
+  totalTracked: number;
+  llmGeneratedCount: number;
+  systemGeneratedCount: number;
+  unknownGeneratedCount: number;
+  clicks: number;
+  completions: number;
+  ignores: number;
+  lastInteractionAt: string | null;
+  recentLogs: NotificationLogRecord[];
+  userPromptNotes: string[];
+}
+
 export interface UserRecord {
   userId: string;
   username?: string;
@@ -113,4 +127,37 @@ export interface TaskRecord {
   startTime?: Date | string | null;
   endTime?: Date | string | null;
   completedAt?: Date | string | null;
+}
+
+export interface NotificationRecord {
+  notificationId: string;
+  userId: string;
+  sourceType?: "HABIT" | "TASK" | "FLOWER" | "SYSTEM";
+  sourceId?: string;
+  timezone?: string;
+  sentAt?: Date | string | null;
+  isDeleted?: boolean;
+  deliveryStatus?: string;
+}
+
+export interface NotificationLogRecord {
+  id: string;
+  notification_id: string;
+  user_id: string;
+  // Domain of the notification content, not how the text was produced.
+  source_type?: "HABIT" | "TASK" | "FLOWER" | "SYSTEM";
+  source_id?: string;
+  // Primary signal for prompt/history decisions:
+  // SYSTEM = fixed/template copy, LLM = model-generated copy.
+  generation_source?: "LLM" | "SYSTEM" | "UNKNOWN";
+  was_clicked?: boolean;
+  clicked_at?: string;
+  was_completed?: boolean;
+  completed_at?: string;
+  was_ignored?: boolean;
+  ignored_at?: string;
+  last_feedback_event?: "CLICKED" | "COMPLETED" | "IGNORED";
+  last_feedback_at?: string;
+  created_at?: string;
+  updated_at?: string;
 }

@@ -357,6 +357,8 @@ class TaskService {
     );
 
     logger.info("Task completed", { taskId, userId, result });
+    await notificationClient.markTaskNotificationsCompleted(taskId);
+    logger.info("Related task notifications marked completed", { taskId });
     await notificationClient.cancelTaskNotifications(taskId);
     logger.info("Related task notifications stopped", { taskId });
     return result;

@@ -278,7 +278,7 @@ export async function notificationClickedHandler(
   res: Response
 ) {
   try {
-    const { notificationId } = req.body;
+    const { notificationId, generationSource } = req.body;
 
     if (!notificationId) {
       return res.status(400).json({
@@ -287,13 +287,116 @@ export async function notificationClickedHandler(
       });
     }
 
-    await notificationService.markNotificationClicked(notificationId);
+    await notificationService.markNotificationClicked(
+      notificationId,
+      generationSource
+    );
 
     return res.json({
       success: true,
       message: "Notification click recorded",
     });
 
+  } catch (err: any) {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+}
+
+export async function notificationGenerationSourceHandler(
+  req: Request,
+  res: Response
+) {
+  try {
+    const { notificationId, generationSource } = req.body;
+
+    if (!notificationId || !generationSource) {
+      return res.status(400).json({
+        success: false,
+        message: "notificationId and generationSource are required",
+      });
+    }
+
+    await notificationService.setNotificationLogGenerationSource(
+      notificationId,
+      generationSource
+    );
+
+    return res.json({
+      success: true,
+      message: "Notification log generation source recorded",
+    });
+  } catch (err: any) {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+}
+
+export async function notificationCompletedHandler(
+  req: Request,
+  res: Response
+) {
+  try {
+    const { notificationId, sourceId, generationSource } = req.body;
+
+    if (!notificationId && !sourceId) {
+      return res.status(400).json({
+        success: false,
+        message: "notificationId or sourceId is required",
+      });
+    }
+
+    if (notificationId) {
+      await notificationService.markNotificationCompleted(
+        notificationId,
+        generationSource
+      );
+    } else {
+      await notificationService.markNotificationsCompletedBySourceId(
+        sourceId,
+        generationSource
+      );
+    }
+
+    return res.json({
+      success: true,
+      message: "Notification completion recorded",
+    });
+  } catch (err: any) {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+}
+
+export async function notificationIgnoredHandler(
+  req: Request,
+  res: Response
+) {
+  try {
+    const { notificationId, generationSource } = req.body;
+
+    if (!notificationId) {
+      return res.status(400).json({
+        success: false,
+        message: "notificationId is required",
+      });
+    }
+
+    await notificationService.markNotificationIgnored(
+      notificationId,
+      generationSource
+    );
+
+    return res.json({
+      success: true,
+      message: "Notification ignore recorded",
+    });
   } catch (err: any) {
     return res.status(400).json({
       success: false,

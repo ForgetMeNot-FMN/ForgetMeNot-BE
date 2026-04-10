@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { contextBuilderService } from "../services/contextBuilderService";
 import { notificationDecisionService } from "../services/notificationDecisionService";
+import { notificationPromptContextService } from "../services/notificationPromptContextService";
 
 export async function generateNotificationMessageHandler(
   req: Request,
@@ -21,6 +22,13 @@ export async function generateNotificationMessageHandler(
 
     // Decision ver
     const decision = notificationDecisionService.decide(context);
+    const systemInstruction =
+      notificationPromptContextService.buildSystemInstruction();
+    const userContextSummary =
+      notificationPromptContextService.buildUserContextSummary(
+        context,
+        decision,
+      );
 
     const reasonData = JSON.parse(decision.reason);
 
@@ -51,6 +59,11 @@ export async function generateNotificationMessageHandler(
       message = "You're doing good. Stay consistent and keep improving 🌱";
     }
 
+    // Future LLM integration point:
+    // Pass `systemInstruction`, `userContextSummary`,
+    // `context.notificationFeedback.userPromptNotes` and `decision.reason`
+    // into the model so the generated message can adapt to prior notification outcomes.
+
     return res.json({
       success: true,
       data: {
@@ -59,6 +72,12 @@ export async function generateNotificationMessageHandler(
         message,
         fallbackUsed: true,
         reason: decision.reason,
+        llmPromptContext: {
+          systemInstruction,
+          userContextSummary,
+          userSpecificNotes:
+            context.notificationFeedback.userPromptNotes,
+        },
       },
     });
   } catch (error: any) {

@@ -57,4 +57,18 @@ export const notificationClient = {
       });
     }
   },
+
+  async markTaskNotificationsCompleted(taskId: string) {
+    try {
+      await axios.post(`${baseURL}/notifications/completed`, {
+        sourceId: taskId,
+        generationSource: "SYSTEM",
+      });
+    } catch (error) {
+      logger.error("Mark task notifications completed failed", {
+        taskId,
+        error,
+      });
+    }
+  },
 };
