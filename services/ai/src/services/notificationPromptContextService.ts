@@ -1,4 +1,7 @@
-import { NotificationDecisionResult } from "../models/decisionModel";
+import {
+  NotificationDecisionResult,
+  NotificationSourceType,
+} from "../models/decisionModel";
 import { UserContextDTO } from "../models/userContextModel";
 
 class NotificationPromptContextService {
@@ -19,14 +22,22 @@ class NotificationPromptContextService {
   buildUserContextSummary(
     context: UserContextDTO,
     decision: NotificationDecisionResult,
+    sourceType?: NotificationSourceType,
   ): string {
     const feedback = context.notificationFeedback;
 
     return [
       `User timezone: ${context.profile.timezone ?? "UTC"}.`,
       `Decision type: ${decision.type}.`,
+      `Notification source type: ${sourceType ?? "SYSTEM"}.`,
+      `Username: ${context.profile.username ?? "unknown"}.`,
+      `Tone preference: ${context.profile.tonePreference ?? "neutral"}.`,
+      `Motivation type: ${context.profile.motivationType ?? "unknown"}.`,
       `Habit completion rate: ${context.habitStats.completionRateLastNDays}%.`,
       `Task completion rate: ${context.taskStats.completionRateLastNDays}%.`,
+      `Current best streak: ${context.habitStats.currentBestStreak}.`,
+      `Goals: ${context.profile.goals.join(", ") || "none"}.`,
+      `Pain points: ${context.profile.painPoints.join(", ") || "none"}.`,
       `Tracked notification logs: ${feedback.totalTracked}.`,
       `LLM-generated notifications: ${feedback.llmGeneratedCount}.`,
       `System-generated notifications: ${feedback.systemGeneratedCount}.`,
