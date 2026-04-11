@@ -10,6 +10,9 @@ app.set("trust proxy", 1);
 
 app.use(cors());
 app.use(express.json());
+app.get("/health", (_req, res) => {
+  res.json({ ok: true, service: "awards-create-get" });
+});
 app.use("/awards", awardsRouter);
 
 const PORT = envs.PORT || 8080;

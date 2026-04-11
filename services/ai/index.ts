@@ -10,6 +10,9 @@ app.set("trust proxy", 1);
 
 app.use(cors());
 app.use(express.json());
+app.get("/health", (_req, res) => {
+  res.json({ ok: true, service: "ai" });
+});
 app.use("/ai", aiRouter);
 
 const PORT = envs.PORT || 8080;

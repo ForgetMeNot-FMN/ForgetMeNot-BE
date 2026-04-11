@@ -11,6 +11,9 @@ app.use(cors());
 app.set("trust proxy", 1);
 
 app.use(express.json());
+app.get("/health", (_req, res) => {
+  res.json({ ok: true, service: "habit" });
+});
 app.use(globalRateLimit);
 app.use("/habit", habitRouter);
 
