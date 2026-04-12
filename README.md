@@ -480,3 +480,8 @@ npm start        # Run compiled build
 Uses CircleCI with **monorepo path-filtering** — only services with changed files are rebuilt and redeployed to Google Cloud Run (`europe-west1`). Services scale to zero automatically between requests.
 
 **Pipeline steps:** detect changed services → build Docker image → push to Google Container Registry → deploy to Cloud Run.
+
+## Additional Documentation
+
+- [Technical Mapping](./TECHNICAL_MAPPING.md)
+- [Releases](./RELEASES.md)
