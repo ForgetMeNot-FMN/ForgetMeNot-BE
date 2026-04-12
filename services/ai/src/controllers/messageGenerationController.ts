@@ -1,9 +1,17 @@
 import { Request, Response } from "express";
-import { NotificationSourceType } from "../models/decisionModel";
+import { AiNotificationType, NotificationSourceType } from "../models/decisionModel";
+import { NotificationType } from "../models/llmModels";
 import { contextBuilderService } from "../services/contextBuilderService";
 import { notificationDecisionService } from "../services/notificationDecisionService";
 import { notificationFallbackService } from "../services/notificationFallbackService";
 import { notificationPromptContextService } from "../services/notificationPromptContextService";
+import { generateNotificationMessage } from "../services/messageGeneratorService";
+
+function toNotificationType(type: AiNotificationType): NotificationType {
+  if (type === "WARNING") return "REMINDER";
+  if (type === "CELEBRATION") return "PROGRESS";
+  return "MOTIVATION";
+}
 
 export async function generateNotificationMessageHandler(
   req: Request,
@@ -33,34 +41,40 @@ export async function generateNotificationMessageHandler(
         sourceType,
       );
 
-    const fallbackMessage =
-      notificationFallbackService.generateMessage(context, decision, {
-        sourceType,
-      });
+    const llmResult = await generateNotificationMessage({
+      userContext: context,
+      weeklyData: context.recentNDays,
+      notificationType: toNotificationType(decision.type),
+    });
 
-    // Future LLM integration point:
-    // Use `systemInstruction`, `userContextSummary`,
-    // `context.notificationFeedback.userPromptNotes` and `decision.reason`
-    // for the model request. If the LLM fails or returns empty/invalid text,
-    // return `fallbackMessage.message` so notification delivery never goes blank.
+    const fallbackMessage = llmResult.fallbackUsed
+      ? notificationFallbackService.generateMessage(context, decision, { sourceType })
+      : null;
+
+    const title = fallbackMessage ? fallbackMessage.title : llmResult.title;
+    const body = fallbackMessage ? fallbackMessage.body : llmResult.body;
+    const message = fallbackMessage ? fallbackMessage.message : llmResult.body;
+    const tone = fallbackMessage
+      ? (context.profile.tonePreference ?? "neutral")
+      : llmResult.tone;
 
     return res.json({
       success: true,
       data: {
         notificationType: decision.type,
-        tone: context.profile.tonePreference ?? "neutral",
-        title: fallbackMessage.title,
-        body: fallbackMessage.body,
-        message: fallbackMessage.message,
-        fallbackUsed: true,
+        tone,
+        title,
+        body,
+        message,
+        fallbackUsed: llmResult.fallbackUsed,
+        generationSource: llmResult.generationSource,
         reason: decision.reason,
         llmPromptContext: {
           systemInstruction,
           userContextSummary,
-          userSpecificNotes:
-            context.notificationFeedback.userPromptNotes,
+          userSpecificNotes: context.notificationFeedback.userPromptNotes,
         },
-        fallbackMetadata: fallbackMessage.strategy,
+        ...(fallbackMessage ? { fallbackMetadata: fallbackMessage.strategy } : {}),
       },
     });
   } catch (error: any) {
