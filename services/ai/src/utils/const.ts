@@ -15,6 +15,7 @@ export const envs = {
   INTERNAL_SERVICE_SECRET: requireEnv("INTERNAL_SERVICE_SECRET"),
   JWT_SECRET: requireEnv("JWT_SECRET"),
   GEMINI_API_KEY: requireEnv("GEMINI_API_KEY"),
+  CHAT_ENCRYPTION_KEY: requireEnv("CHAT_ENCRYPTION_KEY"),
   GEMINI_MODEL: process.env.GEMINI_MODEL || "gemini-2.5-flash",
   PORT: process.env.PORT || "8080",
 };
