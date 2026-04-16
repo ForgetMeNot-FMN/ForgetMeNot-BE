@@ -6,6 +6,15 @@ import {
   ChatUserDoc,
 } from "../models/chatModel";
 import { logger } from "../utils/logger";
+import { decryptMessage, encryptMessage } from "../utils/crypto";
+
+function encryptChatMessage(msg: ChatMessage): ChatMessage {
+  return { ...msg, content: encryptMessage(msg.content) };
+}
+
+function decryptChatMessage(msg: ChatMessage): ChatMessage {
+  return { ...msg, content: decryptMessage(msg.content) };
+}
 
 const CHAT_SESSIONS_COLLECTION = "chat_sessions";
 
@@ -59,7 +68,11 @@ export const chatRepository = {
       return null;
     }
 
-    const session = snap.data() as ChatSession;
+    const raw = snap.data() as ChatSession;
+    const session: ChatSession = {
+      ...raw,
+      messages: raw.messages.map(decryptChatMessage),
+    };
     logger.debug("Chat session loaded from repository", {
       userId,
       sessionDate,
@@ -93,12 +106,14 @@ export const chatRepository = {
   ): Promise<void> {
     const ref = sessionDoc(userId, sessionDate);
     const now = Date.now();
+    const encryptedUser = encryptChatMessage(userMessage);
+    const encryptedModel = encryptChatMessage(modelMessage);
 
     if (!existingSession) {
       await ref.set({
         createdAt: now,
         updatedAt: now,
-        messages: [userMessage, modelMessage],
+        messages: [encryptedUser, encryptedModel],
       });
       logger.info("New chat session created", {
         userId,
@@ -108,9 +123,10 @@ export const chatRepository = {
       return;
     }
 
+    const existingEncrypted = existingSession.messages.map(encryptChatMessage);
     await ref.update({
       updatedAt: now,
-      messages: [...existingSession.messages, userMessage, modelMessage],
+      messages: [...existingEncrypted, encryptedUser, encryptedModel],
     });
     logger.info("Chat session updated", {
       userId,
