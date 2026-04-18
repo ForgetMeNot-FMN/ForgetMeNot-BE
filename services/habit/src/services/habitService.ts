@@ -418,9 +418,10 @@ async function publishHabitCalendarEvents(userId: string, habit: Habit): Promise
     dates,
   });
 
+  const timeOfDay = habit.notificationTime ?? "09:00";
   for (const date of dates) {
-    const startTime = dayjs(`${date}T09:00:00`).toISOString();
-    const endTime = dayjs(`${date}T09:00:00`).add(DEFAULT_DURATION_MINUTES, "minute").toISOString();
+    const startTime = dayjs(`${date}T${timeOfDay}:00`).toISOString();
+    const endTime = dayjs(`${date}T${timeOfDay}:00`).add(DEFAULT_DURATION_MINUTES, "minute").toISOString();
     await publishCalendarEvent({
       action: "create",
       userId,
