@@ -17,6 +17,8 @@ export interface Onboarding {
 
 export type AuthProvider = "google" | "local";
 
+export type UserLanguage = "en" | "tr";
+
 export interface User {
   userId: string;
   email: string;
@@ -28,5 +30,6 @@ export interface User {
   fcmTokens: string[];
   permissions: UserPermissions;
   onboarding: Onboarding;
+  userLanguage: UserLanguage;
   created_at: Date;
 }

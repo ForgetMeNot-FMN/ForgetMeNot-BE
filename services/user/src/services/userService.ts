@@ -32,6 +32,7 @@ class UserService {
         preferredTime: "evening",
         selfDisciplineLevel: 2,
       },
+      userLanguage: payload.userLanguage ?? "en",
       created_at: new Date(),
     });
 

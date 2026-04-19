@@ -53,6 +53,7 @@ function makeUser(overrides: Partial<User> = {}): User {
       preferredTime: 'evening',
       selfDisciplineLevel: 2,
     },
+    userLanguage: 'en',
     created_at: new Date(),
     ...overrides,
   } as User;
@@ -105,6 +106,28 @@ describe('userService', () => {
       expect(createArgs.onboarding.selfDisciplineLevel).toBe(2);
     });
 
+    it('should default userLanguage to en when not provided in the payload', async () => {
+      const payload = makeUser({ userLanguage: undefined });
+      mockRepo.getById.mockResolvedValue(null);
+      mockRepo.create.mockResolvedValue(payload);
+
+      await userService.createUser(payload);
+
+      const createArgs = mockRepo.create.mock.calls[0][1];
+      expect(createArgs.userLanguage).toBe('en');
+    });
+
+    it('should persist userLanguage tr when provided in the payload', async () => {
+      const payload = makeUser({ userLanguage: 'tr' });
+      mockRepo.getById.mockResolvedValue(null);
+      mockRepo.create.mockResolvedValue(payload);
+
+      await userService.createUser(payload);
+
+      const createArgs = mockRepo.create.mock.calls[0][1];
+      expect(createArgs.userLanguage).toBe('tr');
+    });
+
     it('should throw when the user already exists', async () => {
       mockRepo.getById.mockResolvedValue(makeUser());
 
@@ -132,7 +155,7 @@ describe('userService', () => {
     });
   });
 
-  //  updateUser 
+  //  updateUser
 
   describe('updateUser()', () => {
     it('should call update with the provided fields and return the refreshed user', async () => {
@@ -144,6 +167,17 @@ describe('userService', () => {
 
       expect(mockRepo.update).toHaveBeenCalledWith(USER_ID, { username: 'alice_v2' });
       expect(result.username).toBe('alice_v2');
+    });
+
+    it('should persist userLanguage when updated to tr', async () => {
+      const updated = makeUser({ userLanguage: 'tr' });
+      mockRepo.update.mockResolvedValue(undefined);
+      mockRepo.getById.mockResolvedValue(updated);
+
+      const result = await userService.updateUser(USER_ID, { userLanguage: 'tr' });
+
+      expect(mockRepo.update).toHaveBeenCalledWith(USER_ID, { userLanguage: 'tr' });
+      expect(result.userLanguage).toBe('tr');
     });
   });
 
