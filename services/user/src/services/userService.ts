@@ -33,6 +33,7 @@ class UserService {
         selfDisciplineLevel: 2,
       },
       userLanguage: payload.userLanguage ?? "en",
+      uiMode: payload.uiMode ?? "fmn",
       created_at: new Date(),
     });
 

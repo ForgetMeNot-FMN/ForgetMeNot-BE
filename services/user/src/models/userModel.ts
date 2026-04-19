@@ -19,6 +19,8 @@ export type AuthProvider = "google" | "local";
 
 export type UserLanguage = "en" | "tr";
 
+export type UserUI = "fmn" | "basic";
+
 export interface User {
   userId: string;
   email: string;
@@ -31,5 +33,6 @@ export interface User {
   permissions: UserPermissions;
   onboarding: Onboarding;
   userLanguage: UserLanguage;
+  uiMode: UserUI;
   created_at: Date;
 }
