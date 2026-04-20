@@ -131,6 +131,7 @@ describe('firebaseAuthService', () => {
         expect(setArg.email).toBe(decodedFirebaseToken.email);
         expect(setArg.allowNotification).toBe(false);
         expect(setArg.userLanguage).toBe('en');
+        expect(setArg.uiMode).toBe('fmn');
         expect(setArg.onboarding).toMatchObject({
           completed: false,
           goals: expect.any(Array),

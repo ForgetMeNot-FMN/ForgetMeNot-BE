@@ -57,6 +57,7 @@ export const firebaseAuthService = {
           selfDisciplineLevel: 2,
         },
         userLanguage: "en",
+        uiMode: "fmn",
         created_at: new Date(),
       });
       logger.info("New user created in Firestore", { userId, email });
