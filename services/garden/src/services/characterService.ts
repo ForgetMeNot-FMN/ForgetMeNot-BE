@@ -4,8 +4,6 @@ import { CharacterSlot } from "../models/characterDefinitionModel";
 const REQUIRED_SLOTS = [
   CharacterSlot.BODY,
   CharacterSlot.HEAD,
-  CharacterSlot.HAIR_BACK,
-  CharacterSlot.HAIR_FRONT,
   CharacterSlot.CLOTHES,
   CharacterSlot.SHOES,
 ];
@@ -114,8 +112,8 @@ class CharacterService {
     return {
       BODY: equipped.find(i => i.slot === "BODY"),
       HEAD: equipped.find(i => i.slot === "HEAD"),
-      HAIR_BACK: equipped.find(i => i.slot === "HAIR_BACK"),
-      HAIR_FRONT: equipped.find(i => i.slot === "HAIR_FRONT"),
+      HAIR_BACK: equipped.find(i => i.slot === "HAIR_BACK") ?? null,
+      HAIR_FRONT: equipped.find(i => i.slot === "HAIR_FRONT") ?? null,
       CLOTHES: equipped.find(i => i.slot === "CLOTHES"),
       SHOES: equipped.find(i => i.slot === "SHOES"),
       ACCESSORY: equipped.find(i => i.slot === "ACCESSORY") ?? null,
