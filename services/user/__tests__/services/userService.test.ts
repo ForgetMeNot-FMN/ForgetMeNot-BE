@@ -13,7 +13,7 @@ jest.mock('../../src/services/firebaseService', () => ({
     getById: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
-    delete: jest.fn(),
+    deleteAllUserData: jest.fn(),
     addFcmToken: jest.fn(),
   },
 }));
@@ -233,11 +233,11 @@ describe('userService', () => {
 
   describe('deleteUser()', () => {
     it('should delegate deletion to the repository', async () => {
-      mockRepo.delete.mockResolvedValue(undefined);
+      mockRepo.deleteAllUserData.mockResolvedValue(undefined);
 
       await userService.deleteUser(USER_ID);
 
-      expect(mockRepo.delete).toHaveBeenCalledWith(USER_ID);
+      expect(mockRepo.deleteAllUserData).toHaveBeenCalledWith(USER_ID);
     });
   });
 

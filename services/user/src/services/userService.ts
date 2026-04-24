@@ -82,7 +82,7 @@ class UserService {
   async deleteUser(userId: string) {
     logger.warn("Delete user request", { userId });
 
-    await userRepository.delete(userId);
+    await userRepository.deleteAllUserData(userId);
 
     logger.info("User deleted", { userId });
   }
