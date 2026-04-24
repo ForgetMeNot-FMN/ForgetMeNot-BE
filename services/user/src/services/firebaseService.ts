@@ -9,6 +9,11 @@ const HABIT_COMPLETIONS_COLLECTION = "habit_completions";
 const TASKS_COLLECTION = "tasks";
 const AWARDS_COLLECTION = "awards";
 const CHAT_SESSIONS_COLLECTION = "chat_sessions";
+const NOTIFICATIONS_COLLECTION = "notifications";
+const NOTIFICATION_LOGS_COLLECTION = "notification_logs";
+const CALENDAR_EVENTS_COLLECTION = "calendar_events";
+const CALENDAR_CONFLICTS_COLLECTION = "calendar_conflicts";
+const CALENDAR_ACCOUNTS_COLLECTION = "calendar_accounts";
 
 const BATCH_SIZE = 100;
 
@@ -58,31 +63,48 @@ export const userRepository = {
 
     const [
       flowersSnap,
+      characterItemsSnap,
       habitsSnap,
       habitCompletionsSnap,
       tasksSnap,
       awardsSnap,
       chatSessionsSnap,
+      notificationsSnap,
+      notificationLogsSnap,
+      calendarEventsSnap,
+      calendarConflictsSnap,
     ] = await Promise.all([
       gardenRef.collection("flowers").get(),
+      gardenRef.collection("character_items").get(),
       firestore.collection(HABITS_COLLECTION).where("userId", "==", userId).get(),
       firestore.collection(HABIT_COMPLETIONS_COLLECTION).where("userId", "==", userId).get(),
       firestore.collection(TASKS_COLLECTION).where("userId", "==", userId).get(),
       firestore.collection(AWARDS_COLLECTION).where("userId", "==", userId).get(),
       chatRef.collection("sessions").get(),
+      firestore.collection(NOTIFICATIONS_COLLECTION).where("userId", "==", userId).get(),
+      firestore.collection(NOTIFICATION_LOGS_COLLECTION).where("user_id", "==", userId).get(),
+      firestore.collection(CALENDAR_EVENTS_COLLECTION).where("userId", "==", userId).get(),
+      firestore.collection(CALENDAR_CONFLICTS_COLLECTION).where("userId", "==", userId).get(),
     ]);
 
     const refs: DocumentReference[] = [
       firestore.collection(USERS_COLLECTION).doc(userId),
       gardenRef,
       chatRef,
+      firestore.collection(CALENDAR_ACCOUNTS_COLLECTION).doc(`google_${userId}`),
       ...flowersSnap.docs.map((d) => d.ref),
+      ...characterItemsSnap.docs.map((d) => d.ref),
       ...habitsSnap.docs.map((d) => d.ref),
       ...habitCompletionsSnap.docs.map((d) => d.ref),
       ...tasksSnap.docs.map((d) => d.ref),
       ...awardsSnap.docs.map((d) => d.ref),
       ...chatSessionsSnap.docs.map((d) => d.ref),
+      ...notificationsSnap.docs.map((d) => d.ref),
+      ...notificationLogsSnap.docs.map((d) => d.ref),
+      ...calendarEventsSnap.docs.map((d) => d.ref),
+      ...calendarConflictsSnap.docs.map((d) => d.ref),
     ];
+
     await commitInBatches(refs);
   },
 
