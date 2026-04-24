@@ -16,6 +16,7 @@ export const envs = {
   JWT_SECRET: requireEnv("JWT_SECRET"),
   GEMINI_API_KEY: requireEnv("GEMINI_API_KEY"),
   CHAT_ENCRYPTION_KEY: requireEnv("CHAT_ENCRYPTION_KEY"),
+  NOTIFICATION_SERVICE_URL: requireEnv("NOTIFICATION_SERVICE_URL"),
   GEMINI_MODEL: process.env.GEMINI_MODEL || "gemini-2.5-flash",
-  PORT: process.env.PORT || "8080",
+  SERVICE_PORT: process.env.SERVICE_PORT || "8080",
 };

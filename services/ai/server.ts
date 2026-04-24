@@ -15,6 +15,6 @@ app.use(globalRateLimit);
 
 app.use("/ai", aiRouter);
 
-app.listen(envs.PORT, () => {
-  console.log(`AI service running on port ${envs.PORT}`);
+app.listen(envs.SERVICE_PORT, () => {
+  console.log(`AI service running on port ${envs.SERVICE_PORT}`);
 });

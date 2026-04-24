@@ -15,7 +15,7 @@ app.get("/health", (_req, res) => {
 });
 app.use("/ai", aiRouter);
 
-const PORT = envs.PORT || 8080;
+const PORT = envs.SERVICE_PORT || 8080;
 
 app.listen(PORT, () => {
   console.log(`AI service running on port ${PORT}`);
