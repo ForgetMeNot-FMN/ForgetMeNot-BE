@@ -19,6 +19,7 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 const DEFAULT_DAYS = 7;
+const DEFAULT_USER_TIMEZONE = "Europe/Istanbul";
 
 class ContextBuilderService {
   async buildUserContext(
@@ -42,7 +43,7 @@ class ContextBuilderService {
         throw new Error("User not found");
       }
 
-      const userTimezone = (user as any).timezone ?? "UTC";
+      const userTimezone = (user as any).timezone ?? DEFAULT_USER_TIMEZONE;
 
       if (!user.allowNotification) {
         logger.warn("User has notifications disabled", { userId });

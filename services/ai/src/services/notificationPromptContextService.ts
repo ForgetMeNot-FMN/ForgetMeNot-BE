@@ -4,6 +4,8 @@ import {
 } from "../models/decisionModel";
 import { UserContextDTO } from "../models/userContextModel";
 
+const DEFAULT_USER_TIMEZONE = "Europe/Istanbul";
+
 class NotificationPromptContextService {
   buildSystemInstruction(): string {
     return [
@@ -27,7 +29,7 @@ class NotificationPromptContextService {
     const feedback = context.notificationFeedback;
 
     return [
-      `User timezone: ${context.profile.timezone ?? "UTC"}.`,
+      `User timezone: ${context.profile.timezone ?? DEFAULT_USER_TIMEZONE}.`,
       `Decision type: ${decision.type}.`,
       `Notification source type: ${sourceType ?? "SYSTEM"}.`,
       `Username: ${context.profile.username ?? "unknown"}.`,
