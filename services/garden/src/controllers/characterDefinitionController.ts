@@ -1,12 +1,17 @@
 import { characterDefinitionService } from "../services/characterDefinitions/characterDefinitionService";
+import { userLanguageService } from "../services/userLanguageService";
 
 // Tek bir item detayı (key ile)
 export async function getCharacterDefinition(req, res) {
   try {
     const { key } = req.params;
+    const locale = await userLanguageService.getLocale(
+      req.user?.userId,
+      req.query.locale ?? req.headers["accept-language"]
+    );
 
     const data =
-      await characterDefinitionService.getItemDetails(key);
+      await characterDefinitionService.getItemDetails(key, locale);
 
     return res.json({
       success: true,
@@ -23,8 +28,12 @@ export async function getCharacterDefinition(req, res) {
 // Store’da olan tüm item’lar
 export async function getAllCharacterDefinitions(req, res) {
   try {
+    const locale = await userLanguageService.getLocale(
+      req.user?.userId,
+      req.query.locale ?? req.headers["accept-language"]
+    );
     const data =
-      await characterDefinitionService.getAllAvailableItems();
+      await characterDefinitionService.getAllAvailableItems(locale);
 
     return res.json({
       success: true,

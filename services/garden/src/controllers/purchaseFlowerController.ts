@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { purchaseFlowerService } from "../services/purchaseFlowerService";
 import { triggerAwardCheck } from "../services/awardsClient";
+import { userLanguageService } from "../services/userLanguageService";
 
 export async function purchaseFlowerHandler(req: Request, res: Response) {
 
@@ -13,10 +14,16 @@ export async function purchaseFlowerHandler(req: Request, res: Response) {
     if (!flowerKey)
       throw new Error("flowerKey is required");
 
+    const locale = await userLanguageService.getLocale(
+      userId,
+      req.query.locale ?? req.headers["accept-language"]
+    );
+
     const result = await purchaseFlowerService.purchaseFlower(
       userId,
       flowerKey,
-      customName
+      customName,
+      locale
     );
 
     const messageId = await triggerAwardCheck({

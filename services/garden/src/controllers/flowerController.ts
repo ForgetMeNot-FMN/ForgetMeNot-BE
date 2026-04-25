@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { flowerService } from "../services/flowerService";
 import { triggerAwardCheck } from "../services/awardsClient";
-
+import { userLanguageService } from "../services/userLanguageService";
 
 export async function createFlower(req: Request, res: Response) {
   try {
@@ -16,11 +16,14 @@ export async function createFlower(req: Request, res: Response) {
   }
 }
 
-
 export async function getFlower(req: Request, res: Response) {
   try {
     const { userId, flowerId } = req.params;
-    const flower = await flowerService.getFlower(userId, flowerId);
+    const locale = await userLanguageService.getLocale(
+      userId,
+      req.query.locale ?? req.headers["accept-language"]
+    );
+    const flower = await flowerService.getFlower(userId, flowerId, locale);
 
     return res.json({ success: true, data: flower });
   } catch (err: any) {
@@ -28,11 +31,14 @@ export async function getFlower(req: Request, res: Response) {
   }
 }
 
-
 export async function getAllFlowers(req: Request, res: Response) {
   try {
     const { userId } = req.params;
-    const flowers = await flowerService.getAllFlowers(userId);
+    const locale = await userLanguageService.getLocale(
+      userId,
+      req.query.locale ?? req.headers["accept-language"]
+    );
+    const flowers = await flowerService.getAllFlowers(userId, locale);
 
     return res.json({ success: true, data: flowers });
   } catch (err: any) {
@@ -40,11 +46,14 @@ export async function getAllFlowers(req: Request, res: Response) {
   }
 }
 
-
 export async function getBloomedFlowers(req: Request, res: Response) {
   try {
     const { userId } = req.params;
-    const flowers = await flowerService.getAllBloomedFlowers(userId);
+    const locale = await userLanguageService.getLocale(
+      userId,
+      req.query.locale ?? req.headers["accept-language"]
+    );
+    const flowers = await flowerService.getAllBloomedFlowers(userId, locale);
 
     return res.json({ success: true, data: flowers });
   } catch (err: any) {
@@ -106,12 +115,15 @@ export async function plantFlowerHandler(req: Request, res: Response) {
   }
 }
 
-
 export async function getInventoryFlowers(req: Request, res: Response) {
   try {
     const { userId } = req.params;
+    const locale = await userLanguageService.getLocale(
+      userId,
+      req.query.locale ?? req.headers["accept-language"]
+    );
 
-    const flowers = await flowerService.getInventoryFlowers(userId);
+    const flowers = await flowerService.getInventoryFlowers(userId, locale);
 
     return res.json({
       success: true,
@@ -124,7 +136,6 @@ export async function getInventoryFlowers(req: Request, res: Response) {
     });
   }
 }
-
 
 export async function moveFlowerToInventory(req: Request, res: Response) {
   try {
@@ -163,32 +174,30 @@ export async function killFlowerHandler(req: Request, res: Response) {
 }
 
 export async function getDisplayFlowers(req: Request, res: Response) {
-
   try {
-
     const { userId } = req.params;
+    const locale = await userLanguageService.getLocale(
+      userId,
+      req.query.locale ?? req.headers["accept-language"]
+    );
 
     const flowers =
-      await flowerService.getDisplayFlowers(userId);
+      await flowerService.getDisplayFlowers(userId, locale);
 
     return res.json({
       success: true,
       data: flowers
     });
-
-  } catch (err:any) {
-
+  } catch (err: any) {
     return res.status(400).json({
-      success:false,
+      success: false,
       message: err.message
     });
   }
 }
 
 export async function setFlowerDisplay(req: Request, res: Response) {
-
   try {
-
     const { userId, flowerId } = req.params;
     const { slot } = req.body;
 
@@ -200,23 +209,19 @@ export async function setFlowerDisplay(req: Request, res: Response) {
       );
 
     return res.json({
-      success:true,
+      success: true,
       data: result
     });
-
-  } catch (err:any) {
-
+  } catch (err: any) {
     return res.status(400).json({
-      success:false,
+      success: false,
       message: err.message
     });
   }
 }
 
 export async function removeFlowerDisplay(req: Request, res: Response) {
-
   try {
-
     const { userId, flowerId } = req.params;
 
     const result =
@@ -226,14 +231,12 @@ export async function removeFlowerDisplay(req: Request, res: Response) {
       );
 
     return res.json({
-      success:true,
+      success: true,
       data: result
     });
-
-  } catch (err:any) {
-
+  } catch (err: any) {
     return res.status(400).json({
-      success:false,
+      success: false,
       message: err.message
     });
   }

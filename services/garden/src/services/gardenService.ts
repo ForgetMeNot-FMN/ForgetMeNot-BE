@@ -3,8 +3,66 @@ import { flowerRepository } from "./flowerRepository";
 import { logger } from "../utils/logger";
 import { computeStreak } from "./flowerService";
 import dayjs from "dayjs";
+import { Flower } from "../models/flowerModel";
+import { flowerDefinitionRepository } from "./flowerDefinitions/flowerDefinitionRepository";
+import { resolveLocalizedText, SupportedLocale } from "../utils/localization";
 
 class GardenService {
+  private serializeFlowerForResponse(flower: Flower) {
+    const {
+      flowerNameTranslations,
+      isCustomName,
+      ...publicFlower
+    } = flower;
+
+    return publicFlower;
+  }
+
+  private async localizeFlower(flower: Flower, locale: SupportedLocale) {
+    if (flower.isCustomName) {
+      return flower;
+    }
+
+    if (flower.flowerNameTranslations) {
+      return {
+        ...flower,
+        flowerName: resolveLocalizedText(
+          flower.flowerNameTranslations,
+          locale,
+          flower.flowerName
+        ),
+      };
+    }
+
+    const definition = await flowerDefinitionRepository.getByKey(flower.type);
+
+    if (!definition) {
+      return flower;
+    }
+
+    const localizedName = resolveLocalizedText(
+      definition.displayNameTranslations ?? definition.displayName,
+      locale,
+      definition.displayName
+    );
+
+    const knownNames = new Set(
+      [
+        definition.displayName,
+        definition.displayNameTranslations?.en,
+        definition.displayNameTranslations?.tr,
+      ].filter(Boolean)
+    );
+
+    if (!knownNames.has(flower.flowerName)) {
+      return flower;
+    }
+
+    return {
+      ...flower,
+      flowerName: localizedName,
+    };
+  }
 
   async createGarden(userId: string) {
     const existing = await gardenRepository.getByUserId(userId);
@@ -19,7 +77,7 @@ class GardenService {
 
     const yesterday = dayjs().subtract(1, "day").format("YYYY-MM-DD");
 
-    // 🔁 LAZY RESET
+    // ğŸ” LAZY RESET
     if (garden.lastWateredDate && garden.lastWateredDate < yesterday) {
       await gardenRepository.update(userId, { streak: 0 });
       garden.streak = 0;
@@ -71,21 +129,33 @@ class GardenService {
     await gardenRepository.delete(userId);
   }
 
-  async getGardenView(userId: string) {
-
+  async getGardenView(userId: string, locale: SupportedLocale = "en") {
     const garden = await this.getGarden(userId);
-
     const flowers = await flowerRepository.getAll(userId);
 
-    const activeFlower =
+    const activeFlowerRaw =
       flowers.find(
         f => f.isAlive && f.location === "GARDEN"
       ) ?? null;
 
-    const inventoryFlowers =
+    const inventoryFlowersRaw =
       flowers.filter(
         f => f.isAlive && f.location === "INVENTORY"
       );
+
+    const activeFlower = activeFlowerRaw
+      ? this.serializeFlowerForResponse(
+          await this.localizeFlower(activeFlowerRaw, locale)
+        )
+      : null;
+
+    const inventoryFlowers = await Promise.all(
+      inventoryFlowersRaw.map(async (flower) =>
+        this.serializeFlowerForResponse(
+          await this.localizeFlower(flower, locale)
+        )
+      )
+    );
 
     return {
       coins: garden.coins,
@@ -95,7 +165,6 @@ class GardenService {
       inventoryFlowers,
     };
   }
-
 }
 
 export const gardenService = new GardenService();

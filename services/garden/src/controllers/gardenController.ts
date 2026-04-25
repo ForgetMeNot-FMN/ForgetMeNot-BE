@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { gardenService } from "../services/gardenService";
 import { triggerAwardCheck } from "../services/awardsClient";
+import { userLanguageService } from "../services/userLanguageService";
 
 export async function createGardenHandler(req: Request, res: Response) {
   try {
@@ -78,13 +79,17 @@ export async function deleteGardenHandler(req: Request, res: Response) {
   }
 }
 
-export async function getGardenViewHandler(req, res) {
+export async function getGardenViewHandler(req: Request, res: Response) {
   try {
     const { userId } = req.params;
-    const view = await gardenService.getGardenView(userId);
-    res.json({ success: true, data: view });
+    const locale = await userLanguageService.getLocale(
+      userId,
+      req.query.locale ?? req.headers["accept-language"]
+    );
+    const view = await gardenService.getGardenView(userId, locale);
+    return res.json({ success: true, data: view });
   } catch (e: any) {
-    res.status(400).json({
+    return res.status(400).json({
       success: false,
       message: e.message,
     });
