@@ -17,6 +17,8 @@ import { notificationClient } from "./notificationClient";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
+const DEFAULT_USER_TIMEZONE = "Europe/Istanbul";
+
 export interface GeneratedLlmNotification {
   appNotificationType: NotificationType;
   decisionType: AiNotificationType;
@@ -149,7 +151,7 @@ class LlmNotificationService {
       return false;
     }
 
-    const timezoneName = user.timezone ?? "UTC";
+    const timezoneName = user.timezone ?? DEFAULT_USER_TIMEZONE;
     const now = dayjs().tz(timezoneName);
     const preferredSchedule =
       llmNotificationScheduleService.resolvePreferredTime(
