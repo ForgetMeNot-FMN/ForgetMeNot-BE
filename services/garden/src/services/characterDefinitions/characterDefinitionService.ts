@@ -1,14 +1,15 @@
 import { characterDefinitionRepository } from "./characterDefinitionRepository";
 import { getCache, setCache, clearCache } from "./characterDefinitionCache";
 import { logger } from "../../utils/logger";
+import { localizeCharacterDefinition, SupportedLocale } from "../../utils/localization";
 
 class CharacterDefinitionService {
 
-  async getItemDetails(key: string) {
+  async getItemDetails(key: string, locale: SupportedLocale = "en") {
     const cacheKey = `character_def:${key}`;
 
     const cached = getCache(cacheKey);
-    if (cached) return cached;
+    if (cached) return localizeCharacterDefinition(cached, locale);
 
     const item =
       await characterDefinitionRepository.getByKey(key);
@@ -20,11 +21,12 @@ class CharacterDefinitionService {
 
     logger.info("Character item definition fetched", { key });
 
-    return item;
+    return localizeCharacterDefinition(item, locale);
   }
 
-  async getAllAvailableItems() {
-    return characterDefinitionRepository.getAllInStore();
+  async getAllAvailableItems(locale: SupportedLocale = "en") {
+    const items = await characterDefinitionRepository.getAllInStore();
+    return items.map(item => localizeCharacterDefinition(item, locale));
   }
 
   async addDefaultItem(data: any) {

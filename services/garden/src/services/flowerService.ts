@@ -2,9 +2,11 @@ import { flowerRepository } from "./flowerRepository";
 import { logger } from "../utils/flowerLogger";
 import { GrowthStage } from "../utils/enums";
 import dayjs from "dayjs";
+import { Flower } from "../models/flowerModel";
 import { flowerDefinitionRepository } from "./flowerDefinitions/flowerDefinitionRepository";
 import { firestore } from "./firebaseAdmin";
 import { cancelNotificationBySourceId } from "./notificationClient";
+import { resolveLocalizedText, SupportedLocale } from "../utils/localization";
 
 export function computeStreak(
   currentStreak: number,
@@ -18,6 +20,73 @@ export function computeStreak(
 }
 
 class FlowerService {
+  private serializeFlowerForResponse(flower: Flower) {
+    const {
+      flowerNameTranslations,
+      isCustomName,
+      ...publicFlower
+    } = flower;
+
+    return publicFlower;
+  }
+
+  private serializeFlowersForResponse(flowers: Flower[]) {
+    return flowers.map(flower => this.serializeFlowerForResponse(flower));
+  }
+
+  private async localizeFlower(flower: Flower, locale: SupportedLocale) {
+    if (flower.isCustomName) {
+      return flower;
+    }
+
+    if (flower.flowerNameTranslations) {
+      return {
+        ...flower,
+        flowerName: resolveLocalizedText(
+          flower.flowerNameTranslations,
+          locale,
+          flower.flowerName
+        ),
+      };
+    }
+
+    const definition = await flowerDefinitionRepository.getByKey(flower.type);
+
+    if (!definition) {
+      return flower;
+    }
+
+    const localizedName = resolveLocalizedText(
+      definition.displayNameTranslations ?? definition.displayName,
+      locale,
+      definition.displayName
+    );
+
+    const knownNames = new Set(
+      [
+        definition.displayName,
+        definition.displayNameTranslations?.en,
+        definition.displayNameTranslations?.tr,
+      ].filter(Boolean)
+    );
+
+    if (!knownNames.has(flower.flowerName)) {
+      return flower;
+    }
+
+    return {
+      ...flower,
+      flowerName: localizedName,
+      flowerNameTranslations: definition.displayNameTranslations,
+      isCustomName: false,
+    };
+  }
+
+  private async localizeFlowers(flowers: Flower[], locale: SupportedLocale) {
+    return Promise.all(
+      flowers.map(flower => this.localizeFlower(flower, locale))
+    );
+  }
 
   async createFlower(userId: string, data: any) {
     if (!data?.flowerName) throw new Error("flowerName is required");
@@ -25,9 +94,10 @@ class FlowerService {
 
     const flower = await flowerRepository.create(userId, {
       flowerName: data.flowerName,
+      isCustomName: true,
       type: data.type,
 
-      // Create olunca otomatik ayarlanması
+      // Create olunca otomatik ayarlanmasÄ±
       growthStage: GrowthStage.SEED,
       isAlive: true,
       waterCount: 0,
@@ -38,11 +108,15 @@ class FlowerService {
 
     logger.info("Flower created", { userId, flowerId: flower.flowerId });
 
-    return flower;
+    return this.serializeFlowerForResponse(flower);
   }
 
   // Get Flower
-  async getFlower(userId: string, flowerId: string) {
+  async getFlower(
+    userId: string,
+    flowerId: string,
+    locale: SupportedLocale = "en"
+  ) {
     const flower = await flowerRepository.getById(userId, flowerId);
     if (!flower) throw new Error("Flower not found");
 
@@ -81,20 +155,32 @@ class FlowerService {
       }
     }
 
-    return flower;
+    return this.serializeFlowerForResponse(
+      await this.localizeFlower(flower, locale)
+    );
   }
 
   // Get All Flowers
-  async getAllFlowers(userId: string) {
+  async getAllFlowers(userId: string, locale: SupportedLocale = "en") {
     const flowers = await flowerRepository.getAll(userId);
-    return flowers.filter(f => f.isAlive);
+    return this.serializeFlowersForResponse(
+      await this.localizeFlowers(
+        flowers.filter(f => f.isAlive),
+        locale
+      )
+    );
   }
 
-  // Sadece bloomed çiçekler
-  async getAllBloomedFlowers(userId: string) {
+  // Sadece bloomed Ã§iÃ§ekler
+  async getAllBloomedFlowers(userId: string, locale: SupportedLocale = "en") {
     const flowers = await flowerRepository.getAll(userId);
-    return flowers.filter(
-      f => f.growthStage === GrowthStage.BLOOM && f.isAlive
+    return this.serializeFlowersForResponse(
+      await this.localizeFlowers(
+        flowers.filter(
+          f => f.growthStage === GrowthStage.BLOOM && f.isAlive
+        ),
+        locale
+      )
     );
   }
 
@@ -223,7 +309,7 @@ class FlowerService {
     return transactionResult;
   }
 
-  //  Kill Flower 
+  //  Kill Flower
   async killFlower(userId: string, flowerId: string) {
     const flower = await this.getFlower(userId, flowerId);
     if (!flower) throw new Error("Flower not found");
@@ -320,7 +406,7 @@ class FlowerService {
 
       const gardenRef = firestore.collection("gardens").doc(userId);
       const flowersRef = gardenRef.collection("flowers");
-      // Planted'ın sadece 1 çiçek olması
+      // Planted'Ä±n sadece 1 Ã§iÃ§ek olmasÄ±
       const plantedQuery = await tx.get(
         flowersRef
           .where("location", "==", "GARDEN")
@@ -364,9 +450,9 @@ class FlowerService {
     });
   }
 
-  // Bloom olmuş olan çiçeği inventory e ekleme
+  // Bloom olmuÅŸ olan Ã§iÃ§eÄŸi inventory e ekleme
   async moveToInventory(userId: string, flowerId: string) {
-      return await firestore.runTransaction(async (tx) => {
+    return await firestore.runTransaction(async (tx) => {
       const flowerRef =
         firestore.collection("gardens")
           .doc(userId)
@@ -400,35 +486,52 @@ class FlowerService {
     });
   }
 
-  // Inventory'deki çiçekler
-  async getInventoryFlowers(userId: string) {
+  // Inventory'deki Ã§iÃ§ekler
+  async getInventoryFlowers(userId: string, locale: SupportedLocale = "en") {
     const flowers = await flowerRepository.getAll(userId);
 
-    return flowers.filter(f =>
-      f.isAlive &&
-      f.location === "INVENTORY"
+    return this.serializeFlowersForResponse(
+      await this.localizeFlowers(
+        flowers.filter(f =>
+          f.isAlive &&
+          f.location === "INVENTORY"
+        ),
+        locale
+      )
     );
   }
 
-  // Bahçede dikili olan çiçek
-  async getActiveGardenFlower(userId: string) {
+  // BahÃ§ede dikili olan Ã§iÃ§ek
+  async getActiveGardenFlower(userId: string, locale: SupportedLocale = "en") {
     const flowers = await flowerRepository.getAll(userId);
 
-    return (
+    const activeFlower =
       flowers.find(f =>
         f.isAlive &&
         f.location === "GARDEN"
-      ) ?? null
+      ) ?? null;
+
+    if (!activeFlower) {
+      return null;
+    }
+
+    return this.serializeFlowerForResponse(
+      await this.localizeFlower(activeFlower, locale)
     );
   }
 
-  async getDisplayFlowers(userId: string) {
+  async getDisplayFlowers(userId: string, locale: SupportedLocale = "en") {
     const flowers = await flowerRepository.getAll(userId);
 
-    return flowers.filter(f =>
-      f.isAlive &&
-      f.location === "INVENTORY" &&
-      f.displaySlot != null
+    return this.serializeFlowersForResponse(
+      await this.localizeFlowers(
+        flowers.filter(f =>
+          f.isAlive &&
+          f.location === "INVENTORY" &&
+          f.displaySlot != null
+        ),
+        locale
+      )
     );
   }
 
@@ -438,7 +541,7 @@ class FlowerService {
     slot: number
   ) {
 
-    if (![1,2,3].includes(slot))
+    if (![1, 2, 3].includes(slot))
       throw new Error("Invalid display slot");
 
     const flower = await flowerRepository.getById(userId, flowerId);
@@ -488,7 +591,6 @@ class FlowerService {
 
     return { success: true };
   }
-  
-
 }
+
 export const flowerService = new FlowerService();

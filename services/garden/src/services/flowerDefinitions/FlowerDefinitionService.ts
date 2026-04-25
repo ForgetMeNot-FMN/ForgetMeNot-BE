@@ -1,24 +1,26 @@
 import { flowerDefinitionRepository } from "./flowerDefinitionRepository";
 import { clearCache, getCache, setCache } from "./flowerDefinitionCache";
 import { logger } from "../../utils/flowerLogger";
+import { localizeFlowerDefinition, SupportedLocale } from "../../utils/localization";
 
 class FlowerDefinitionService {
-  async getDefaultFlowerDetails(type: string) {
+  async getDefaultFlowerDetails(type: string, locale: SupportedLocale = "en") {
   const cacheKey = `flower_def:${type}`;
   const cached = getCache(cacheKey);
-  if (cached) return cached;
+  if (cached) return localizeFlowerDefinition(cached, locale);
 
   const flower = await flowerDefinitionRepository.getByKey(type);
   if (!flower) throw new Error("Flower definition not found");
 
   setCache(cacheKey, flower);
   logger.info("Flower definition fetched", { type });
-  return flower;
+  return localizeFlowerDefinition(flower, locale);
 }
 
 
-  async getAllAvailableFlowers() {
-    return flowerDefinitionRepository.getAll();
+  async getAllAvailableFlowers(locale: SupportedLocale = "en") {
+    const flowers = await flowerDefinitionRepository.getAll();
+    return flowers.map(flower => localizeFlowerDefinition(flower, locale));
   }
 
   async addDefaultFlower(data: any) {

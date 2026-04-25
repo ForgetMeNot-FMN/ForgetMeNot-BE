@@ -1,6 +1,9 @@
+import { LocalizedText } from "../utils/localization";
+
 export interface CharacterDefinition {
   key: string;                 // "hat_red_01"
   displayName: string;         // "Red Hat"
+  displayNameTranslations?: LocalizedText;
 
   category: CharacterCategory; // "CLOTHING" | "ACCESSORY" | "BODY"
   slot: CharacterSlot;         // "HAT", "DRESS", "HAIR_FRONT" vs.
@@ -14,8 +17,8 @@ export enum CharacterSlot {
   BODY = "BODY",               // zorunlu
   HEAD = "HEAD",               // zorunlu
 
-  HAIR_BACK = "HAIR_BACK",     // zorunlu
-  HAIR_FRONT = "HAIR_FRONT",   // zorunlu
+  HAIR_BACK = "HAIR_BACK",     // opsiyonel
+  HAIR_FRONT = "HAIR_FRONT",   // opsiyonel
 
   CLOTHES = "CLOTHES",         // zorunlu
   SHOES = "SHOES",             // zorunlu

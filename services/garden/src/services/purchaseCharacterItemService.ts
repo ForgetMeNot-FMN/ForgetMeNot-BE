@@ -1,12 +1,14 @@
 import { firestore } from "./firebaseAdmin";
 import { characterDefinitionRepository } from "./characterDefinitions/characterDefinitionRepository";
 import { logger } from "../utils/logger";
+import { resolveLocalizedText, SupportedLocale } from "../utils/localization";
 
 class PurchaseCharacterItemService {
 
   async purchaseItem(
     userId: string,
-    itemKey: string
+    itemKey: string,
+    locale: SupportedLocale = "en"
   ) {
     return await firestore.runTransaction(async (tx) => {
 
@@ -39,10 +41,14 @@ class PurchaseCharacterItemService {
       const itemRef =
         gardenRef.collection("character_items").doc();
 
-      const item = {
+      const item: any = {
         itemId: itemRef.id,
         key: definition.key,
-        displayName: definition.displayName,
+        displayName: resolveLocalizedText(
+          definition.displayNameTranslations ?? definition.displayName,
+          locale,
+          definition.displayName
+        ),
         category: definition.category,
         slot: definition.slot,
         price: definition.price,
@@ -52,6 +58,9 @@ class PurchaseCharacterItemService {
         createdAt: now,
         updatedAt: now,
       };
+      if (definition.displayNameTranslations) {
+        item.displayNameTranslations = definition.displayNameTranslations;
+      }
 
       // update garden
       tx.update(gardenRef, {

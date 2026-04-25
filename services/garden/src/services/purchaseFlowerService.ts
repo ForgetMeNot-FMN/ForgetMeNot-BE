@@ -1,14 +1,26 @@
 import { flowerDefinitionRepository } from "./flowerDefinitions/flowerDefinitionRepository";
+import { Flower } from "../models/flowerModel";
 import { GrowthStage } from "../utils/enums";
 import { logger } from "../utils/flowerLogger";
 import { firestore } from "./firebaseAdmin";
+import { resolveLocalizedText, SupportedLocale } from "../utils/localization";
 
 class PurchaseFlowerService {
+  private serializeFlowerForResponse(flower: Flower) {
+    const {
+      flowerNameTranslations,
+      isCustomName,
+      ...publicFlower
+    } = flower;
+
+    return publicFlower;
+  }
 
   async purchaseFlower(
     userId: string,
     flowerKey: string,
-    customName?: string
+    customName?: string,
+    locale: SupportedLocale = "en"
   ) {
 
     return await firestore.runTransaction(async (tx) => {
@@ -41,9 +53,18 @@ class PurchaseFlowerService {
       const flowerRef =
         gardenRef.collection("flowers").doc();
 
-      const flower = {
+      const trimmedCustomName = customName?.trim();
+      const localizedName = resolveLocalizedText(
+        definition.displayNameTranslations ?? definition.displayName,
+        locale,
+        definition.displayName
+      );
+
+      const flower: Flower = {
         flowerId: flowerRef.id,
-        flowerName: customName?.trim() || definition.displayName,
+        flowerName: trimmedCustomName || localizedName,
+        flowerNameTranslations: definition.displayNameTranslations,
+        isCustomName: Boolean(trimmedCustomName),
         type: definition.key,
         growthStage: GrowthStage.SEED,
         isAlive: true,
@@ -57,12 +78,9 @@ class PurchaseFlowerService {
 
       // Update garden
       tx.update(gardenRef, {
-
         coins: newCoins,
-
         totalFlowers:
           (garden.totalFlowers ?? 0) + 1,
-
         updatedAt: now,
       });
 
@@ -70,25 +88,17 @@ class PurchaseFlowerService {
       tx.set(flowerRef, flower);
 
       logger.info("Flower purchased", {
-
         userId,
-
         flowerId: flowerRef.id,
-
         flowerKey,
-
         price: definition.price,
-
         coinsLeft: newCoins,
       });
 
       return {
-
-        flower,
-
+        flower: this.serializeFlowerForResponse(flower),
         coinsLeft: newCoins,
       };
-
     });
   }
 }

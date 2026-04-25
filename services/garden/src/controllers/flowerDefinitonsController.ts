@@ -1,9 +1,14 @@
 import { flowerDefinitionService } from "../services/flowerDefinitions/FlowerDefinitionService";
+import { userLanguageService } from "../services/userLanguageService";
 
 export async function getDefaultFlowerDetails(req, res) {
   try {
     const { type } = req.params;
-    const data = await flowerDefinitionService.getDefaultFlowerDetails(type);
+    const locale = await userLanguageService.getLocale(
+      req.user?.userId,
+      req.query.locale ?? req.headers["accept-language"]
+    );
+    const data = await flowerDefinitionService.getDefaultFlowerDetails(type, locale);
     res.json({ success: true, data });
   } catch (e) {
     res.status(404).json({ success: false, message: e.message });
@@ -12,7 +17,11 @@ export async function getDefaultFlowerDetails(req, res) {
 
 export async function getAllFlowerDefinitions(req, res) {
   try {
-    const data = await flowerDefinitionService.getAllAvailableFlowers();
+    const locale = await userLanguageService.getLocale(
+      req.user?.userId,
+      req.query.locale ?? req.headers["accept-language"]
+    );
+    const data = await flowerDefinitionService.getAllAvailableFlowers(locale);
     res.json({ success: true, data });
   } catch (e) {
     res.status(400).json({ success: false, message: e.message });

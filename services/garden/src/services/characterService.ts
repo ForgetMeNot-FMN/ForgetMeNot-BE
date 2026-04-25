@@ -1,5 +1,10 @@
 import { firestore } from "./firebaseAdmin";
 import { CharacterSlot } from "../models/characterDefinitionModel";
+import { characterDefinitionRepository } from "./characterDefinitions/characterDefinitionRepository";
+import {
+  resolveLocalizedText,
+  SupportedLocale,
+} from "../utils/localization";
 
 const REQUIRED_SLOTS = [
   CharacterSlot.BODY,
@@ -10,14 +15,36 @@ const REQUIRED_SLOTS = [
 
 class CharacterService {
 
-  async getInventory(userId: string) {
+  private async localizeItems(items: any[], locale: SupportedLocale) {
+    const keys = [...new Set(items.map(item => item.key).filter(Boolean))];
+    const definitions = await Promise.all(
+      keys.map(async key => [key, await characterDefinitionRepository.getByKey(key)] as const)
+    );
+    const definitionsByKey = new Map(definitions);
+
+    return items.map(item => {
+      const definition = definitionsByKey.get(item.key);
+
+      return {
+        ...item,
+        displayName: resolveLocalizedText(
+          item.displayNameTranslations ?? definition?.displayNameTranslations ?? item.displayName,
+          locale,
+          item.displayName ?? definition?.displayName
+        ),
+      };
+    });
+  }
+
+  async getInventory(userId: string, locale: SupportedLocale = "en") {
     const snap = await firestore
       .collection("gardens")
       .doc(userId)
       .collection("character_items")
       .get();
 
-    return snap.docs.map(d => d.data());
+    const items = snap.docs.map(d => d.data());
+    return this.localizeItems(items, locale);
   }
 
   async equipItem(userId: string, itemId: string) {
@@ -99,7 +126,7 @@ class CharacterService {
     });
   }
 
-  async getCurrent(userId: string) {
+  async getCurrent(userId: string, locale: SupportedLocale = "en") {
     const snap = await firestore
       .collection("gardens")
       .doc(userId)
@@ -107,7 +134,7 @@ class CharacterService {
       .where("equipped", "==", true)
       .get();
 
-    const equipped = snap.docs.map(d => d.data());
+    const equipped = await this.localizeItems(snap.docs.map(d => d.data()), locale);
 
     return {
       BODY: equipped.find(i => i.slot === "BODY"),
