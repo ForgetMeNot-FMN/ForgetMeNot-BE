@@ -144,10 +144,17 @@ class LlmNotificationService {
     user: UserRecord,
   ): Promise<boolean> {
     if (!user.userId) {
+      logger.info("Daily LLM notification skipped", {
+        reason: "missing_user_id",
+      });
       return false;
     }
 
     if (Array.isArray(user.fcmTokens) && user.fcmTokens.length === 0) {
+      logger.info("Daily LLM notification skipped", {
+        userId: user.userId,
+        reason: "no_fcm_tokens",
+      });
       return false;
     }
 
@@ -162,6 +169,14 @@ class LlmNotificationService {
       preferredSchedule.slot,
       now.hour(),
     )) {
+      logger.info("Daily LLM notification skipped", {
+        userId: user.userId,
+        reason: "hour_mismatch",
+        timezone: timezoneName,
+        currentHour: now.hour(),
+        preferredTime: preferredSchedule.slot,
+        preferredHour: preferredSchedule.hour,
+      });
       return false;
     }
 
@@ -173,6 +188,12 @@ class LlmNotificationService {
       );
 
     if (alreadyCreated) {
+      logger.info("Daily LLM notification skipped", {
+        userId: user.userId,
+        reason: "already_created_for_today",
+        sourceId,
+        timezone: timezoneName,
+      });
       return false;
     }
 
