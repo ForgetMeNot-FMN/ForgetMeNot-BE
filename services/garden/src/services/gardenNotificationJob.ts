@@ -23,6 +23,16 @@ export type GardenNotificationJobResult = {
   now: string;
 };
 
+async function userAllowsNotifications(userId: string): Promise<boolean> {
+  const userDoc = await firestore.collection("users").doc(userId).get();
+  if (!userDoc.exists) {
+    return false;
+  }
+
+  const userData = userDoc.data() as { allowNotification?: boolean } | undefined;
+  return userData?.allowNotification === true;
+}
+
 export async function runGardenNotificationJob(): Promise<GardenNotificationJobResult> {
   const now = new Date();
   const gardensSnapshot = await firestore.collection("gardens").get();
@@ -41,6 +51,14 @@ export async function runGardenNotificationJob(): Promise<GardenNotificationJobR
     const userId = gardenDoc.id;
 
     try {
+      const notificationsEnabled = await userAllowsNotifications(userId);
+      if (!notificationsEnabled) {
+        logger.info("Garden notification skipped: user disabled notifications", {
+          userId,
+        });
+        continue;
+      }
+
       const activeFlower = await flowerRepository.getActiveFlowerByUserId(userId);
       if (!activeFlower) {
         continue;
