@@ -81,7 +81,9 @@ export interface UserRecord {
   username?: string;
   age?: number | null;
   gender?: string | null;
+  timezone?: string | null;
   allowNotification?: boolean;
+  fcmTokens?: string[];
   onboarding?: {
     completed?: boolean;
     goals?: string[];

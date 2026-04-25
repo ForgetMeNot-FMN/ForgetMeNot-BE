@@ -16,6 +16,18 @@ const NOTIFICATION_LOGS_COLLECTION = "notification_logs";
 const NOTIFICATIONS_COLLECTION = "notifications";
 
 export const userContextRepository = {
+  async listUsersEligibleForLlmNotifications(): Promise<UserRecord[]> {
+    const snap = await firestore
+      .collection(USERS_COLLECTION)
+      .where("allowNotification", "==", true)
+      .get();
+
+    return snap.docs.map((doc) => ({
+      userId: doc.id,
+      ...doc.data(),
+    } as UserRecord));
+  },
+
   async getUserById(userId: string): Promise<UserRecord | null> {
     const doc = await firestore.collection(USERS_COLLECTION).doc(userId).get();
     return doc.exists ? ({ userId: doc.id, ...doc.data() } as UserRecord) : null;
@@ -88,6 +100,21 @@ export const userContextRepository = {
       notificationId: doc.id,
       ...doc.data(),
     } as NotificationRecord));
+  },
+
+  async hasActiveNotificationBySourceId(
+    userId: string,
+    sourceId: string,
+  ): Promise<boolean> {
+    const snap = await firestore
+      .collection(NOTIFICATIONS_COLLECTION)
+      .where("userId", "==", userId)
+      .where("sourceId", "==", sourceId)
+      .where("isDeleted", "==", false)
+      .limit(1)
+      .get();
+
+    return !snap.empty;
   },
 
   async upsertIgnoredNotificationLog(params: {

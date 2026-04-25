@@ -3,7 +3,10 @@ import rateLimit from "express-rate-limit";
 import { internalServiceAuthMiddleware } from "../middlewares/internalServiceAuthMiddleware";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import { buildUserContextHandler, healthHandler } from "../controllers/contextController";
-import { generateNotificationMessageHandler } from "../controllers/messageGenerationController";
+import {
+  dispatchDailyLlmNotificationsHandler,
+  generateNotificationMessageHandler,
+} from "../controllers/messageGenerationController";
 import {
   sendMessageHandler,
   getSessionsHandler,
@@ -32,6 +35,7 @@ router.get("/internal/context/users/:userId", internalServiceAuthMiddleware, bui
 
 // Notification Generation
 router.post("/internal/notifications/generate", internalServiceAuthMiddleware, generateNotificationMessageHandler);
+router.post("/internal/notifications/dispatch-daily", internalServiceAuthMiddleware, dispatchDailyLlmNotificationsHandler);
 
 // Chat
 router.post("/chat/message", authMiddleware, chatMessageRateLimit, sendMessageHandler);
