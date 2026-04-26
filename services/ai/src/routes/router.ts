@@ -21,7 +21,7 @@ const router = Router();
 const chatMessageRateLimit = rateLimit({
   windowMs: 60 * 1000,
   max: 20,
-  keyGenerator: (req: any) => req.user?.userId ?? "anonymous",
+  keyGenerator: (req: any) => req.params.userId ?? "anonymous",
   validate: { keyGeneratorIpFallback: false },
   standardHeaders: true,
   legacyHeaders: false,
@@ -38,11 +38,11 @@ router.post("/internal/notifications/generate", internalServiceAuthMiddleware, g
 router.post("/internal/notifications/dispatch-daily", internalServiceAuthMiddleware, dispatchDailyLlmNotificationsHandler);
 
 // Chat
-router.post("/chat/message", authMiddleware, chatMessageRateLimit, sendMessageHandler);
-router.get("/chat/sessions", authMiddleware, getSessionsHandler);
-router.get("/chat/sessions/:date", authMiddleware, getSessionByDateHandler);
-router.delete("/chat/sessions/:date", authMiddleware, deleteSessionHandler);
-router.get("/chat/preferences", authMiddleware, getPreferencesHandler);
-router.patch("/chat/preferences", authMiddleware, setPreferencesHandler);
+router.post("/chat/:userId/message", authMiddleware, chatMessageRateLimit, sendMessageHandler);
+router.get("/chat/:userId/sessions", authMiddleware, getSessionsHandler);
+router.get("/chat/:userId/sessions/:date", authMiddleware, getSessionByDateHandler);
+router.delete("/chat/:userId/sessions/:date", authMiddleware, deleteSessionHandler);
+router.get("/chat/:userId/preferences", authMiddleware, getPreferencesHandler);
+router.patch("/chat/:userId/preferences", authMiddleware, setPreferencesHandler);
 
 export default router;
