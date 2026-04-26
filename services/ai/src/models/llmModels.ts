@@ -64,3 +64,14 @@ export const FALLBACK_RESPONSE: LLMNotificationResponse = {
   body: "Don't forget to stay consistent today.",
   tone: "neutral",
 };
+
+export function getFallbackResponse(language?: string | null): LLMNotificationResponse {
+  if (language === "tr") {
+    return {
+      title: "Tutarlı kal",
+      body: "Bugün tutarlı olmayı unutma.",
+      tone: "neutral",
+    };
+  }
+  return FALLBACK_RESPONSE;
+}

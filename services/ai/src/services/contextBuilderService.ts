@@ -98,6 +98,7 @@ class ContextBuilderService {
           username: user.username ?? null,
           age: user.age ?? null,
           gender: user.gender ?? null,
+          userLanguage: user.userLanguage ?? null,
           allowNotification: user.allowNotification ?? false,
           onboardingCompleted: user.onboarding?.completed ?? false,
           goals: user.onboarding?.goals ?? [],

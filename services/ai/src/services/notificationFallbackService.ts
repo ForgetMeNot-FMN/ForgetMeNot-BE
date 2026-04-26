@@ -46,6 +46,7 @@ interface FallbackState {
   hasTaskBacklog: boolean;
   hasHabitBacklog: boolean;
   totalDoneToday: number;
+  language: "en" | "tr";
   demographicLeaf:
     | "young_female"
     | "young_male"
@@ -101,6 +102,38 @@ class NotificationFallbackService {
   }
 
   private buildTitle(state: FallbackState): string {
+    if (state.language === "tr") {
+      switch (state.reason.trigger) {
+        case "streak_break":
+          return state.reason.intensity === "HIGH"
+            ? "Seriniz durdu"
+            : "Bugün küçük bir ara";
+        case "severe_drop":
+          return state.reason.intensity === "HIGH"
+            ? "Temponu sıfırlayalım"
+            : "Sıfırlama zamanı";
+        case "no_activity_today":
+          return "Bugün hâlâ açık";
+        case "low_engagement":
+          return "Rutinine yakın kal";
+        case "high_streak":
+          return state.reason.streak >= 14
+            ? `${state.reason.streak} günlük seri`
+            : "Seriniz harika görünüyor";
+        case "high_performance":
+          return "Güzel bir gidişatın var";
+        case "strong_daily_progress":
+          return "Bugün sağlam ilerleme";
+        case "daily_progress":
+          return "Bugün güzel gidiyor";
+        case "steady_state":
+        default:
+          if (state.decision.type === "WARNING") return "Küçük bir sıfırlama";
+          if (state.decision.type === "CELEBRATION") return "Devam ettir bunu";
+          return "Temponu sabit tut";
+      }
+    }
+
     switch (state.reason.trigger) {
       case "streak_break":
         return state.reason.intensity === "HIGH"
@@ -163,6 +196,66 @@ class NotificationFallbackService {
   }
 
   private buildStreakBreakBodies(state: FallbackState): string[] {
+    if (state.language === "tr") {
+      if (state.decision.type === "WARNING" && state.reason.intensity === "HIGH") {
+        if (state.personaTone === "soft" || state.hasHighIgnoreRate) {
+          return this.pickThree([
+            `${this.nameIntro(state, true)}bugün seri kırıldı. Yeniden başlamak için bir ${state.sourceLabel} yeterli.`,
+            "Seri önemliydi. Bu akşam küçük bir adımla yenisine başla.",
+            "Dramatik bir sıfırlamaya gerek yok, bugün sadece bir adım at.",
+          ]);
+        }
+
+        if (state.personaTone === "strict" || state.disciplineLevel === 5) {
+          return this.pickThree([
+            `${this.nameIntro(state, true)}bugün seri gitti. Temiz bir ${state.sourceLabel} kazanımıyla yeniden başla.`,
+            `Sıfırlama oldu. Gün bitmeden bir ${state.sourceLabel} tamamla.`,
+            `Bir günün ikiye dönmesine izin verme. Şimdi bir ${state.sourceLabel} bitir.`,
+          ]);
+        }
+
+        if (state.personaTone === "friendly") {
+          return this.pickThree([
+            `${this.nameIntro(state, true)}seri kaçtı ama bugün hâlâ kurtarılabilir. Bir adımla yeniden başlarsın.`,
+            `O seri güzeldi. Hızlı bir ${state.sourceLabel} ile yenisine başla.`,
+            "Mükemmel bir geri dönüşe gerek yok. Sadece bir adım yeterli.",
+          ]);
+        }
+      }
+
+      if (state.decision.type === "WARNING") {
+        if (state.personaTone === "soft") {
+          return this.pickThree([
+            `Seri bugün durdu. Kolay bir ${state.sourceLabel} ile yeniden harekete geç.`,
+            "Bugün hafiften başlamak yeterli. Sadece bir adım at.",
+            `Ağır alma. Bir ${state.sourceLabel} bugün için yeterli.`,
+          ]);
+        }
+
+        if (state.personaTone === "strict") {
+          return this.pickThree([
+            `Seri bitti. Tamamlanmış bir ${state.sourceLabel} ile düzelt.`,
+            "Bugün temiz bir kazanımla kurtar.",
+            "Odaklı bir adımla ritme geri dön.",
+          ]);
+        }
+
+        if (state.personaTone === "friendly") {
+          return this.pickThree([
+            `${this.nameIntro(state, true)}seri bugün durdu. Bir adımla yeniden içine girersin.`,
+            `O seri güzeldi. Gün kapanmadan yenisine başla.`,
+            `Bugünü hızlı bir ${state.sourceLabel} ile kurtarabilirsin.`,
+          ]);
+        }
+      }
+
+      return this.pickThree([
+        `${this.nameIntro(state, true)}seriniz bugün durdu. Odaklı bir ${state.sourceLabel} sıfırlamayı başlatır.`,
+        `${this.goalLead(state)}Kırık bir seri, bugün harekete geçersen daha kolay düzelir.`,
+        `Seri bitti ama rutin bitmek zorunda değil. Bir ${state.sourceLabel} yap.`,
+      ]);
+    }
+
     if (state.decision.type === "WARNING" && state.reason.intensity === "HIGH") {
       if (state.personaTone === "soft" || state.hasHighIgnoreRate) {
         return this.pickThreeLeaf(state, [
@@ -223,6 +316,66 @@ class NotificationFallbackService {
   }
 
   private buildSevereDropBodies(state: FallbackState): string[] {
+    if (state.language === "tr") {
+      if (state.decision.type === "WARNING" && state.reason.intensity === "HIGH") {
+        if (state.personaTone === "soft" || state.hasHighIgnoreRate) {
+          return this.pickThree([
+            "Bu hafta normalden daha ağır hissettiriyor. Bugün bir adım yeterli.",
+            `${this.goalLead(state)}Büyük bir plan gerekmez, bugün bir adım yeterli.`,
+            `Sonraya bırakma, küçük başla. Bugün bir ${state.sourceLabel} yeterli.`,
+          ]);
+        }
+
+        if (state.personaTone === "strict") {
+          return this.pickThree([
+            `Tempo düştü. Bir ${state.sourceLabel} tamamlayarak burada durdur.`,
+            "Şimdi toparlanma zamanı. Bugün bir şeyi bitir.",
+            `${this.commitmentLead(state)}Bugünü temiz bir kazanımla değerlendir.`,
+          ]);
+        }
+
+        if (state.personaTone === "friendly") {
+          return this.pickThree([
+            `${this.capitalize(state.painPoint ?? "bu zorlu dönem")} bugünü de götürmek zorunda değil.`,
+            "Düşük bir dönem geçirdin. Bugünü hafif tut ve bir adım at.",
+            `${this.nameIntro(state, false)}bir ${state.sourceLabel} düşüşü kesmek için yeterli.`,
+          ]);
+        }
+      }
+
+      if (state.decision.type === "WARNING") {
+        if (state.personaTone === "soft") {
+          return this.pickThree([
+            "Her zamanki temponda değilsin. Küçük bir sıfırlama yardımcı olur.",
+            `Bugünü hafif tut ve bir ${state.sourceLabel} yap.`,
+            "Bugün için küçük bir adım yeterli.",
+          ]);
+        }
+
+        if (state.personaTone === "strict") {
+          return this.pickThree([
+            `Biraz kayıyorsun. Bir ${state.sourceLabel} seç ve tamamla.`,
+            "Küçük bir adım işlerin daha da kötüleşmesini engeller.",
+            "Net bir adım at ve rutine geri dön.",
+          ]);
+        }
+
+        if (state.personaTone === "friendly") {
+          return this.pickThree([
+            "Tempun her zamankinden daha sakin. Bugün bir adım yardımcı olur.",
+            "Bugün hafif bir sıfırlama çok şey yapar.",
+            `Kolay bir ${state.sourceLabel} seç ve ilerliyor say.`,
+          ]);
+        }
+      }
+
+      return this.pickThree([
+        `Rutin biraz bozuldu. Kolay bir adımla başla.`,
+        `${this.goalLead(state)}Motivasyon bekleme, bugün bir adım at.`,
+        "Momentum şu an düşük. Daha da kaymasın diye harekete geç.",
+      ]);
+    }
+
     if (state.decision.type === "WARNING" && state.reason.intensity === "HIGH") {
       if (state.personaTone === "soft" || state.hasHighIgnoreRate) {
         return this.pickThreeLeaf(state, [
@@ -283,6 +436,60 @@ class NotificationFallbackService {
   }
 
   private buildNoActivityTodayBodies(state: FallbackState): string[] {
+    if (state.language === "tr") {
+      if (state.decision.type === "WARNING") {
+        if (state.personaTone === "soft") {
+          return this.pickThree([
+            `Bugün henüz ilerleme yok. Kolay bir ${state.sourceLabel} ile başla.`,
+            `${this.timeLead(state)}Küçücük bir adım bile sayılır.`,
+            "Bugün hâlâ açık. İlk adımı küçük tut.",
+          ]);
+        }
+
+        if (state.personaTone === "strict") {
+          return this.pickThree([
+            state.hasTaskBacklog
+              ? "Bugün hâlâ hiçbir şey bitmedi. Şimdi bir görevi tamamla."
+              : `Bugün henüz ilerleme yok. Bir ${state.sourceLabel} tamamla.`,
+            `${this.commitmentLead(state)}O zamanı iyi değerlendir, bir şeyi bitir.`,
+            "Bugünü boş bırakma. Şimdi bir adım at.",
+          ]);
+        }
+
+        if (state.personaTone === "friendly") {
+          return this.pickThree([
+            state.hasTaskBacklog
+              ? "Bugünün listesi hâlâ dokunulmamış. En kolay görevle başla."
+              : "Bugün henüz bir şey yapılmadı. Tek küçük bir adım seç ve günü canlı tut.",
+            `${this.timeLead(state)}Şimdi hızlı bir kontrol yardımcı olur.`,
+            `${this.nameIntro(state, true)}bugün için tek bir adım yeterli.`,
+          ]);
+        }
+      }
+
+      if (state.sourceType === "TASK" || state.hasTaskBacklog) {
+        return this.pickThree([
+          "Bugün hâlâ hiçbir şey bitmedi. Bir görevi bitir, gün hafifler.",
+          `${this.timeLead(state)}Listendeki en kolay görevle başla.`,
+          `${this.commitmentLead(state)}İyi yapılan tek bir görev şimdilik yeterli.`,
+        ]);
+      }
+
+      if (state.sourceType === "HABIT" || state.hasHabitBacklog) {
+        return this.pickThree([
+          "Bugün henüz alışkanlık ilerlemesi yok. En kolayından başla.",
+          `${this.timeLead(state)}Bir tik günü harekete geçirir.`,
+          `${this.goalLead(state)}Küçük bir alışkanlık adımıyla rutini canlı tut.`,
+        ]);
+      }
+
+      return this.pickThree([
+        `Bugün henüz ilerleme yok. Bir ${state.sourceLabel} ile başla.`,
+        `${this.goalLead(state)}Şimdi başlarsan bugün güzel bitebilir.`,
+        `${this.nameIntro(state, false)}basit tut ve bir adım at.`,
+      ]);
+    }
+
     if (state.decision.type === "WARNING") {
       if (state.personaTone === "soft") {
         return this.pickThreeLeaf(state, [
@@ -337,6 +544,40 @@ class NotificationFallbackService {
   }
 
   private buildLowEngagementBodies(state: FallbackState): string[] {
+    if (state.language === "tr") {
+      if (state.decision.type === "WARNING") {
+        if (state.personaTone === "soft" || state.hasHighIgnoreRate) {
+          return this.pickThree([
+            `Bugün baskı yok. Sadece küçük bir ${state.sourceLabel} yap.`,
+            "Büyük bir geri dönüşe gerek yok. Bir adım yeterli.",
+            `${this.goalLead(state)}Hafif tut ve rutine bağlı kal.`,
+          ]);
+        }
+
+        if (state.personaTone === "strict") {
+          return this.pickThree([
+            `Biraz geride kalıyorsun. Şimdi bir ${state.sourceLabel} bitir.`,
+            "Tamamlanmış bir adımla rutini koru.",
+            `${this.goalLead(state)}Disiplini sürdürmek, yeniden kazanmaktan çok daha kolaydır.`,
+          ]);
+        }
+
+        if (state.personaTone === "friendly") {
+          return this.pickThree([
+            "Momentumun biraz düşük. Hızlı bir kazanım onu tekrar canlandırır.",
+            `${this.nameIntro(state, true)}bugün için tek küçük bir adım yeterli.`,
+            "Şimdi küçük bir sıfırlama, daha büyük birinden iyidir.",
+          ]);
+        }
+      }
+
+      return this.pickThree([
+        "Biraz ritimden çıktın. Küçük bir adım seni geri alır.",
+        `${this.goalLead(state)}Bugün tutarlılık mükemmellikten daha önemli.`,
+        `Bir ${state.sourceLabel} ile rutine yakın kal.`,
+      ]);
+    }
+
     if (state.decision.type === "WARNING") {
       if (state.personaTone === "soft" || state.hasHighIgnoreRate) {
         return this.pickThreeLeaf(state, [
@@ -371,6 +612,32 @@ class NotificationFallbackService {
   }
 
   private buildHighStreakBodies(state: FallbackState): string[] {
+    if (state.language === "tr") {
+      if (state.decision.type === "CELEBRATION") {
+        if (state.personaTone === "strict") {
+          return this.pickThree([
+            `${this.nameIntro(state, true)}${state.reason.streak} gündesin. Bugün koru.`,
+            `Seri güçlü. Standardını koru ve bir ${state.sourceLabel} tamamla.`,
+            "Bugünkü payını yap ve seriyi canlı tut.",
+          ]);
+        }
+
+        if (state.personaTone === "friendly") {
+          return this.pickThree([
+            `${this.nameIntro(state, true)}${state.reason.streak} gün sana yakışıyor. Bugün de devam ettir.`,
+            "Gerçekten iyi bir ritimdesin. Bir adım daha onu temiz tutar.",
+            "Seri artık gerçek. Kolay bir kazanımla koru.",
+          ]);
+        }
+      }
+
+      return this.pickThree([
+        `${this.nameIntro(state, true)}${state.reason.streak} gün üst üste güçlü. Bugün devam et.`,
+        "Rutinin çok iyi tutuyor. Bugün de devam et.",
+        `Tamamlanmış bir ${state.sourceLabel} seriyi sağlıklı tutar.`,
+      ]);
+    }
+
     if (state.decision.type === "CELEBRATION") {
       if (state.personaTone === "strict") {
         return this.pickThreeLeaf(state, [
@@ -403,6 +670,40 @@ class NotificationFallbackService {
   }
 
   private buildHighPerformanceBodies(state: FallbackState): string[] {
+    if (state.language === "tr") {
+      if (state.decision.type === "CELEBRATION") {
+        if (state.personaTone === "soft") {
+          return this.pickThree([
+            "Son zamanlarda iyi gidiyorsun. Ritmi koru, baskıyı değil.",
+            "Bu tempo işliyor. Nazik ve tutarlı kal.",
+            "Bugün bir adım daha yeterli.",
+          ]);
+        }
+
+        if (state.personaTone === "friendly") {
+          return this.pickThree([
+            "Son zamanlarda çok iyi gidiyorsun. Bugünü de sade ve sabit tut.",
+            `${this.nameIntro(state, true)}bu tempo sana uyuyor. Bir küçük kazanım daha güzel oturuyor.`,
+            "Şimdiye kadar güçlü bir hafta. Bugünü basit tut.",
+          ]);
+        }
+
+        if (state.personaTone === "strict") {
+          return this.pickThree([
+            "Güçlü bir gidişatın var. Bugün de aynı şekilde devam et.",
+            "Bu tempo işliyor. Sade tut ve bir adım daha ekle.",
+            "Seni buraya getiren rutini koru.",
+          ]);
+        }
+      }
+
+      return this.pickThree([
+        "Son zamanlardaki ritmin işliyor. Sıradaki adımı sade tut.",
+        `${this.goalLead(state)}Yaptığın şey işliyor, sabit tut.`,
+        "İyi gidiyorsun. Seni buraya getiren rutini koru.",
+      ]);
+    }
+
     if (state.decision.type === "CELEBRATION") {
       if (state.personaTone === "soft") {
         return this.pickThreeLeaf(state, [
@@ -445,6 +746,40 @@ class NotificationFallbackService {
   }
 
   private buildStrongDailyProgressBodies(state: FallbackState): string[] {
+    if (state.language === "tr") {
+      if (state.decision.type === "CELEBRATION") {
+        if (state.personaTone === "soft") {
+          return this.pickThree([
+            "Bugün güzel ilerliyorsun. Hafif tut ve devam et.",
+            `${this.nameIntro(state, false)}bugün güzel gidiyor. Nazik ve sabit tut.`,
+            "Şu an momentumun var. Koru, acele etme.",
+          ]);
+        }
+
+        if (state.personaTone === "strict") {
+          return this.pickThree([
+            "Bugün verimli ilerledin. Temponu dengede tut.",
+            "Güzel bir ivme yakaladın. Sıradaki adımı net bir şekilde tamamla.",
+            "Şu ana kadar güçlü gidiyorsun. Sıradaki adımda odağını koru.",
+          ]);
+        }
+
+        if (state.personaTone === "friendly") {
+          return this.pickThree([
+            "Bugün güzel gidiyor. Momentumu devam ettir.",
+            "Birkaç kazanım biriktirdin. Güzel iş çıkarttın.",
+            "Bu güçlü bir gün. Tempoyu gerçekçi tut.",
+          ]);
+        }
+      }
+
+      return this.pickThree([
+        "Bugün güzel ilerleme. Ritmi devam ettir.",
+        `${this.goalLead(state)}Bugün doğru yönde ilerliyor.`,
+        "Buradan tek bir bilinçli adım yeterli.",
+      ]);
+    }
+
     if (state.decision.type === "CELEBRATION") {
       if (state.personaTone === "soft") {
         return this.pickThreeLeaf(state, [
@@ -479,6 +814,40 @@ class NotificationFallbackService {
   }
 
   private buildDailyProgressBodies(state: FallbackState): string[] {
+    if (state.language === "tr") {
+      if (state.decision.type === "CELEBRATION") {
+        if (state.personaTone === "soft") {
+          return this.pickThree([
+            "Bugün küçük bir ilerleme bile değerli. Aynı tempoda devam et.",
+            "Faydalı bir şey yaptın, bu bugün için yeterince iyi.",
+            "İstersen bir küçük kazanım daha ekleyebilirsin.",
+          ]);
+        }
+
+        if (state.personaTone === "friendly") {
+          return this.pickThree([
+            "Bugün güzel bir ilerleme. Devam et.",
+            `${this.nameIntro(state, true)}iyi başladın. Devam et.`,
+            "İyi bir adım atıldı. Devam etmek istersen et.",
+          ]);
+        }
+
+        if (state.personaTone === "strict") {
+          return this.pickThree([
+            "Bugün güzel başladın. Üzerine bir küçük adım daha ekle",
+            "İşi ileri taşıdın, bu seviyeyi koru",
+            "Rutinde kal, bir adım daha tamamla",
+          ]);
+        }
+      }
+
+      return this.pickThree([
+        "Bugün güzel bir ilerleme. Ritmini sabit tut.",
+        `${this.goalLead(state)}Bugün zaten sayılıyor.`,
+        "Buradan devam etmek için tek bir net adım yeterli.",
+      ]);
+    }
+
     if (state.decision.type === "CELEBRATION") {
       if (state.personaTone === "soft") {
         return this.pickThreeLeaf(state, [
@@ -521,6 +890,55 @@ class NotificationFallbackService {
   }
 
   private buildSteadyStateBodies(state: FallbackState): string[] {
+    if (state.language === "tr") {
+      if (state.decision.type === "WARNING") {
+        if (state.reason.intensity === "HIGH") {
+          if (state.personaTone === "strict") {
+            return this.pickThree([
+              "Daha fazla aksamasın diye küçük ama net bir adım at.",
+              "Bugünü basit tut: tek bir adım bile başlamak için yeterli.",
+              "Küçük bir işi tamamlayarak rutinini sürdür.",
+            ]);
+          }
+
+          return this.pickThree([
+            `Bugün bir sıfırlamaya ihtiyaç var. Kolay bir adımla başla.`,
+            `${this.goalLead(state)}Sürüklenmeyi durdurmak için küçük bir adım yeterli.`,
+            "Şimdi küçük bir sıfırlama beklemekten daha çok yardımcı olur.",
+          ]);
+        }
+
+        if (state.personaTone === "soft") {
+          return this.pickThree([
+            `Küçük bir sıfırlama yardımcı olur. Kolay bir ${state.sourceLabel} ile başla.`,
+            "Ritmi bugün basit tut.",
+            "Şimdilik tek bir adım yeterli.",
+          ]);
+        }
+
+        return this.pickThree([
+          `Küçük bir sıfırlama yardımcı olur. Bir ${state.sourceLabel} ile başla.`,
+          `${this.goalLead(state)}Rotadan çok uzak değilsin, sadece bir adım at.`,
+          "Basit tut ve bir şeyler yapmaya başla.",
+        ]);
+      }
+
+      if (state.decision.type === "CELEBRATION") {
+        return this.pickThree([
+          "Bu tempoyu bugün sabit tut.",
+          `${this.goalLead(state)}Yeterince yapıyorsun, sadece tutarlı kal.`,
+          "Bugün dramatik bir şey gerekmez. Bir küçük adım daha yeterli.",
+        ]);
+      }
+
+      return this.pickThree([
+        "Ritmi bugün basit tut.",
+        `${this.goalLead(state)}Tutarlı kalmak burada mükemmelden daha değerli.`,
+        `${this.timeLead(state)}Tek bir adım yeterli.`,
+        "Küçük bir adımla rutinini sabit tut.",
+      ]);
+    }
+
     if (state.decision.type === "WARNING") {
       if (state.reason.intensity === "HIGH") {
         if (state.personaTone === "strict") {
@@ -575,15 +993,17 @@ class NotificationFallbackService {
     reason: NotificationReasonData,
     sourceType: NotificationSourceType,
   ): FallbackState {
+    const language = context.profile.userLanguage === "tr" ? "tr" : "en";
     return {
       context,
       decision,
       reason,
       sourceType,
+      language,
       personaTone: this.resolvePersonaTone(context),
       ageGroup: this.resolveAgeGroup(context.profile.age),
       genderProfile: this.resolveGenderProfile(context.profile.gender),
-      sourceLabel: this.resolveSourceLabel(sourceType, reason.focusArea),
+      sourceLabel: this.resolveSourceLabel(sourceType, reason.focusArea, language),
       username: this.resolveUsername(context.profile.username),
       goal: this.cleanPhrase(context.profile.goals[0] ?? null),
       painPoint: this.cleanPhrase(context.profile.painPoints[0] ?? null),
@@ -724,7 +1144,17 @@ class NotificationFallbackService {
   private resolveSourceLabel(
     sourceType: NotificationSourceType,
     focusArea: NotificationReasonData["focusArea"],
+    language: "en" | "tr",
   ): string {
+    if (language === "tr") {
+      if (sourceType === "TASK") return "görev";
+      if (sourceType === "HABIT") return "alışkanlık";
+      if (sourceType === "FLOWER") return "kontrol";
+      if (focusArea === "task") return "görev";
+      if (focusArea === "habit") return "alışkanlık";
+      return "adım";
+    }
+
     if (sourceType === "TASK") return "task";
     if (sourceType === "HABIT") return "habit";
     if (sourceType === "FLOWER") return "check-in";
@@ -754,6 +1184,10 @@ class NotificationFallbackService {
       return "";
     }
 
+    if (state.language === "tr") {
+      return `${this.capitalize(state.goal)} küçük adımlarla ilerliyor. `;
+    }
+
     return `${this.capitalize(state.goal)} still moves with small steps. `;
   }
 
@@ -762,12 +1196,20 @@ class NotificationFallbackService {
       return "";
     }
 
+    if (state.language === "tr") {
+      return `Her zamanki ${state.preferredTime.toLowerCase()} vaktini hâlâ kullanabilirsin. `;
+    }
+
     return `Your usual ${state.preferredTime.toLowerCase()} window can still work for you. `;
   }
 
   private commitmentLead(state: FallbackState): string {
     if (!state.dailyCommitment) {
       return "";
+    }
+
+    if (state.language === "tr") {
+      return `${state.dailyCommitment} dakikan var, iyi değerlendirirsen yeterli. `;
     }
 
     return `${state.dailyCommitment} minutes is enough if you use it well. `;

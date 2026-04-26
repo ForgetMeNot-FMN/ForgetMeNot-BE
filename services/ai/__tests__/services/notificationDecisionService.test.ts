@@ -9,6 +9,7 @@ function makeContext(overrides: Partial<UserContextDTO> = {}): UserContextDTO {
       username: 'test',
       age: null,
       gender: null,
+      userLanguage: null,
       allowNotification: true,
       onboardingCompleted: true,
       goals: ['be_consistent'],

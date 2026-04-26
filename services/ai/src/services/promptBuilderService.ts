@@ -28,8 +28,9 @@ export function generatePrompt(
   const toneInstruction = deriveToneInstruction(notificationType);
   const streakLine = buildStreakLine(streak);
   const historySection = buildHistorySection(notificationFeedback.userPromptNotes);
+  const isTurkish = profile.userLanguage === "tr";
 
-  const systemPrompt = buildSystemPrompt();
+  const systemPrompt = buildSystemPrompt(isTurkish);
   const userPrompt = buildUserPrompt({
     goals,
     motivationType,
@@ -71,8 +72,8 @@ function buildHistorySection(notes: string[]): string {
   return "\nHistory signals:\n" + notes.map((n) => `- ${n}`).join("\n");
 }
 
-function buildSystemPrompt(): string {
-  return [
+function buildSystemPrompt(turkish: boolean): string {
+  const lines = [
     "You are a push notification writer for a personal productivity app called Forget Me Not.",
     "Your only job is to write one short, human push notification for a real user based on their goals and recent activity.",
     "",
@@ -87,7 +88,13 @@ function buildSystemPrompt(): string {
     "- Do NOT explain your reasoning",
     "- Do NOT invent numbers, streaks, or facts that were not given to you",
     "- If the context feels thin or ambiguous, write a warm generic message rather than guessing",
-  ].join("\n");
+  ];
+
+  if (turkish) {
+    lines.push("", "IMPORTANT: Write ALL text (title and body) in Turkish (Türkçe). Do not use English.");
+  }
+
+  return lines.join("\n");
 }
 
 function buildUserPrompt(params: {
