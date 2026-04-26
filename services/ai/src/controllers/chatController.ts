@@ -27,7 +27,7 @@ const preferencesSchema = z.object({
 
 export async function sendMessageHandler(req: AuthRequest, res: Response) {
   try {
-    const userId = req.user?.userId;
+    const userId = String(req.params.userId);
     if (!userId) {
       logger.warn("Chat message request rejected: missing user", {
         route: "POST /chat/message",
@@ -137,7 +137,7 @@ export async function sendMessageHandler(req: AuthRequest, res: Response) {
 
 export async function getSessionsHandler(req: AuthRequest, res: Response) {
   try {
-    const userId = req.user?.userId;
+    const userId = String(req.params.userId);
     if (!userId) {
       logger.warn("Get chat sessions request rejected: missing user", {
         route: "GET /chat/sessions",
@@ -159,7 +159,7 @@ export async function getSessionsHandler(req: AuthRequest, res: Response) {
 
 export async function getSessionByDateHandler(req: AuthRequest, res: Response) {
   try {
-    const userId = req.user?.userId;
+    const userId = String(req.params.userId);
     if (!userId) {
       logger.warn("Get chat session request rejected: missing user", {
         route: "GET /chat/sessions/:date",
@@ -201,7 +201,7 @@ export async function getSessionByDateHandler(req: AuthRequest, res: Response) {
 
 export async function deleteSessionHandler(req: AuthRequest, res: Response) {
   try {
-    const userId = req.user?.userId;
+    const userId = String(req.params.userId);
     if (!userId) {
       logger.warn("Delete chat session request rejected: missing user", {
         route: "DELETE /chat/sessions/:date",
@@ -234,7 +234,7 @@ export async function deleteSessionHandler(req: AuthRequest, res: Response) {
 
 export async function setPreferencesHandler(req: AuthRequest, res: Response) {
   try {
-    const userId = req.user?.userId;
+    const userId = String(req.params.userId);
     if (!userId) {
       logger.warn("Set chat preferences request rejected: missing user", {
         route: "PATCH /chat/preferences",
@@ -271,7 +271,7 @@ export async function setPreferencesHandler(req: AuthRequest, res: Response) {
 
 export async function getPreferencesHandler(req: AuthRequest, res: Response) {
   try {
-    const userId = req.user?.userId;
+    const userId = String(req.params.userId);
     if (!userId) {
       logger.warn("Get chat preferences request rejected: missing user", {
         route: "GET /chat/preferences",
