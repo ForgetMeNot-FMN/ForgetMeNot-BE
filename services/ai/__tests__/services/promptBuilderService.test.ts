@@ -10,6 +10,7 @@ function makeContext(overrides: Partial<UserContextDTO> = {}): UserContextDTO {
       username: 'alice',
       age: 28,
       gender: 'female',
+      userLanguage: null,
       allowNotification: true,
       onboardingCompleted: true,
       goals: ['exercise_daily', 'read_books'],
@@ -171,6 +172,38 @@ describe('generatePrompt()', () => {
     it('SYSTEM should produce an informational tone instruction', () => {
       const { userPrompt } = generatePrompt(makeContext(), noWeeklyData, 'SYSTEM');
       expect(userPrompt).toContain('informational');
+    });
+  });
+
+  describe('systemPrompt — Turkish language instruction', () => {
+    it('should include Turkish instruction when userLanguage is tr', () => {
+      const ctx = makeContext({ profile: { ...makeContext().profile, userLanguage: 'tr' } });
+      const { systemPrompt } = generatePrompt(ctx, noWeeklyData, 'REMINDER');
+
+      expect(systemPrompt).toContain('Turkish');
+      expect(systemPrompt).toContain('Türkçe');
+    });
+
+    it('should NOT include Turkish instruction when userLanguage is null', () => {
+      const ctx = makeContext({ profile: { ...makeContext().profile, userLanguage: null } });
+      const { systemPrompt } = generatePrompt(ctx, noWeeklyData, 'REMINDER');
+
+      expect(systemPrompt).not.toContain('Turkish');
+    });
+
+    it('should NOT include Turkish instruction when userLanguage is en', () => {
+      const ctx = makeContext({ profile: { ...makeContext().profile, userLanguage: 'en' } });
+      const { systemPrompt } = generatePrompt(ctx, noWeeklyData, 'REMINDER');
+
+      expect(systemPrompt).not.toContain('Turkish');
+    });
+
+    it('should produce the same userPrompt regardless of language', () => {
+      const ctxTr = makeContext({ profile: { ...makeContext().profile, userLanguage: 'tr' } });
+      const ctxEn = makeContext({ profile: { ...makeContext().profile, userLanguage: 'en' } });
+
+      expect(generatePrompt(ctxTr, noWeeklyData, 'REMINDER').userPrompt)
+        .toBe(generatePrompt(ctxEn, noWeeklyData, 'REMINDER').userPrompt);
     });
   });
 

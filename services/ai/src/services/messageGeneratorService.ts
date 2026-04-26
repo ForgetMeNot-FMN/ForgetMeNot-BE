@@ -2,7 +2,7 @@ import { callLLM } from "./llmService";
 import { generatePrompt } from "./promptBuilderService";
 import { logger } from "../utils/logger";
 import {
-  FALLBACK_RESPONSE,
+  getFallbackResponse,
   GenerateNotificationMessageParams,
   GenerateNotificationMessageResult,
   llmResponseSchema,
@@ -12,6 +12,7 @@ export async function generateNotificationMessage(
   params: GenerateNotificationMessageParams,
 ): Promise<GenerateNotificationMessageResult> {
   const { userContext, weeklyData, notificationType } = params;
+  const language = userContext.profile.userLanguage;
 
   const prompt = generatePrompt(userContext, weeklyData, notificationType);
 
@@ -35,7 +36,7 @@ export async function generateNotificationMessage(
       error: message,
     });
 
-    return toFallbackResult(notificationType);
+    return toFallbackResult(notificationType, language);
   }
 
   let parsed: unknown;
@@ -49,7 +50,7 @@ export async function generateNotificationMessage(
       rawResponse,
     });
 
-    return toFallbackResult(notificationType);
+    return toFallbackResult(notificationType, language);
   }
 
   const validation = llmResponseSchema.safeParse(parsed);
@@ -65,7 +66,7 @@ export async function generateNotificationMessage(
       },
     );
 
-    return toFallbackResult(notificationType);
+    return toFallbackResult(notificationType, language);
   }
 
   const validated = validation.data;
@@ -90,11 +91,13 @@ export async function generateNotificationMessage(
 
 function toFallbackResult(
   notificationType: string,
+  language?: string | null,
 ): GenerateNotificationMessageResult {
+  const fallback = getFallbackResponse(language);
   return {
-    title: FALLBACK_RESPONSE.title,
-    body: FALLBACK_RESPONSE.body,
-    tone: FALLBACK_RESPONSE.tone,
+    title: fallback.title,
+    body: fallback.body,
+    tone: fallback.tone,
     notificationType,
     fallbackUsed: true,
     generationSource: "SYSTEM",
