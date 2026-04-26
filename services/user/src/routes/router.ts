@@ -8,11 +8,13 @@ import {
   addFcmTokenHandler,
   setAllowNotificationHandler
 } from "../controllers/userController";
+import { getUserDataAnalysisHandler } from "../controllers/userDataAnalysisController";
 import { authMiddleware } from "../middlewares/authMiddleware";
 
 const router = Router();
 
 router.post("/",authMiddleware, createUserHandler);
+router.get("/:userId/analysis", authMiddleware, getUserDataAnalysisHandler);
 router.get("/:userId",authMiddleware, getUserHandler);
 router.put("/:userId", authMiddleware, updateUserHandler);
 router.patch("/:userId/permissions", authMiddleware, updatePermissionsHandler);
