@@ -13,4 +13,6 @@ export const envs = {
   FIREBASE_SERVICE_ACCOUNT: requireEnv("FIREBASE_SERVICE_ACCOUNT"),
   JWT_SECRET: requireEnv("JWT_SECRET"),
   PORT: process.env.PORT || "8080",
+  TASK_REWARD_COINS: Number(process.env.TASK_REWARD_COINS || 5),
+  TASK_REWARD_WATER: Number(process.env.TASK_REWARD_WATER || 1),
 };
