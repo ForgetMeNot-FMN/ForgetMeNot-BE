@@ -293,16 +293,25 @@ async logNotificationFeedback(
         ? existingData?.generation_source ?? "UNKNOWN"
         : generationSource,
     was_clicked: existingData?.was_clicked ?? false,
-    clicked_at: existingData?.clicked_at,
     was_completed: existingData?.was_completed ?? false,
-    completed_at: existingData?.completed_at,
     was_ignored: existingData?.was_ignored ?? false,
-    ignored_at: existingData?.ignored_at,
     last_feedback_event: outcome,
     last_feedback_at: timestamp,
     created_at: existingData?.created_at ?? timestamp,
     updated_at: timestamp,
   };
+
+  if (existingData?.clicked_at) {
+    logEntry.clicked_at = existingData.clicked_at;
+  }
+
+  if (existingData?.completed_at) {
+    logEntry.completed_at = existingData.completed_at;
+  }
+
+  if (existingData?.ignored_at) {
+    logEntry.ignored_at = existingData.ignored_at;
+  }
 
   if (outcome === "CLICKED") {
     logEntry.was_clicked = true;
