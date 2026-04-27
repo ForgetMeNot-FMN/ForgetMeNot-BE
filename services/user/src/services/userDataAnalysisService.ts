@@ -8,6 +8,7 @@ import {
   UserDataAnalysis,
 } from "../models/userDataAnalysisModel";
 import { envs } from "../utils/const";
+import { logger } from "../utils/logger";
 
 dayjs.extend(utc);
 dayjs.extend(timezonePlugin);
@@ -109,6 +110,8 @@ class UserDataAnalysisService {
     const startDate = range.start.format("YYYY-MM-DD");
     const endDate = range.end.format("YYYY-MM-DD");
 
+    logger.info("User data analysis range calculated", { userId, period: query.period, timezone, start: range.start.toISOString(), end: range.end.toISOString(), startDate, endDate });
+
     const [
       tasks,
       habitCompletions,
@@ -130,6 +133,8 @@ class UserDataAnalysisService {
       userDataAnalysisRepository.getGardenBalance(userId),
       userDataAnalysisRepository.getFlowerSnapshot(userId),
     ]);
+
+    logger.info("User data analysis source data fetched", { userId, period: query.period, taskCount: tasks.length, habitCompletionCount: habitCompletions.length, awardCount: awards.length, flowerCount: flowers.purchasedSeeds });
 
     const rewardedTasks = tasks.filter((task) => task.rewardGranted === true);
     const taskCoins = rewardedTasks.length * envs.TASK_REWARD_COINS;
@@ -177,6 +182,8 @@ class UserDataAnalysisService {
       if (index < 0) return;
       series[index].awardsEarned += 1;
     });
+
+    logger.info("User data analysis completed", { userId, period: query.period, tasks: tasks.length, habits: habitCompletions.length, awards: awards.length });
 
     return {
       userId,

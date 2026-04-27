@@ -6,6 +6,7 @@ import {
   FlowerSnapshot,
   GardenBalance,
 } from "../models/userDataAnalysisModel";
+import { logger } from "../utils/logger";
 
 const TASKS_COLLECTION = "tasks";
 const HABIT_COMPLETIONS_COLLECTION = "habit_completions";
@@ -37,6 +38,8 @@ export const userDataAnalysisRepository = {
       .where("completedAt", "<=", end)
       .get();
 
+    logger.info("Completed tasks fetched for analysis", { userId, count: snapshot.size });
+
     return snapshot.docs.map((doc) => {
       const data = doc.data();
       return {
@@ -59,6 +62,8 @@ export const userDataAnalysisRepository = {
       .where("date", ">=", startDate)
       .where("date", "<=", endDate)
       .get();
+
+    logger.info("Habit completions fetched for analysis", { userId, count: snapshot.size, startDate, endDate });
 
     return snapshot.docs.map((doc) => {
       const data = doc.data();
@@ -84,6 +89,8 @@ export const userDataAnalysisRepository = {
       .where("unlockedAt", "<=", end)
       .get();
 
+    logger.info("Awards fetched for analysis", { userId, count: snapshot.size });
+
     return snapshot.docs.map((doc) => {
       const data = doc.data();
       return {
@@ -98,6 +105,8 @@ export const userDataAnalysisRepository = {
     const doc = await firestore.collection(GARDENS_COLLECTION).doc(userId).get();
     const data = doc.exists ? doc.data() : null;
 
+    logger.info("Garden balance fetched for analysis", { userId, exists: doc.exists });
+
     return {
       coins: Number(data?.coins ?? 0),
       water: Number(data?.water ?? 0),
@@ -110,6 +119,8 @@ export const userDataAnalysisRepository = {
       .doc(userId)
       .collection("flowers")
       .get();
+
+    logger.info("Flowers fetched for analysis snapshot", { userId, count: snapshot.size });
 
     let grownFlowers = 0;
     let deadFlowers = 0;
