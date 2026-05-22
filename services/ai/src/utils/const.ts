@@ -19,4 +19,5 @@ export const envs = {
   NOTIFICATION_SERVICE_URL: requireEnv("NOTIFICATION_SERVICE_URL"),
   GEMINI_MODEL: process.env.GEMINI_MODEL || "gemini-2.5-flash",
   SERVICE_PORT: process.env.SERVICE_PORT || "8080",
+  PROFANITY_PATTERNS: process.env.PROFANITY_PATTERNS || "",
 };
